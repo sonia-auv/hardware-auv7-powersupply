@@ -20,15 +20,14 @@ Thread threadmotor2v;
 Thread threadmotor2c;
 Thread threadmotor1toggle;
 Thread threadmotor2toggle;
-Thread thread12vtoggle;
 Thread threadmotor1read;
 Thread threadmotor2read;
-Thread thread12vread;
 
 I2C i2c_bus(I2CSDA,I2CSCL);
 INA226 sensorm1(&i2c_bus, adress16V1);
 INA226 sensorm2(&i2c_bus, adress16V2);
 INA226 sensor12v(&i2c_bus, adress12v);
+TC74A5 temperature(&i2c_bus, adressTemp);
 
 void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
@@ -304,31 +303,6 @@ void Motor2Toggle()
   }
 }
 
-void Run12vToggle()
-{
-  uint8_t cmd_array[1]={CMD_PS_ACT_12V};
-  uint8_t run12v_receive[255]={0};
-  uint8_t run12v_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,run12v_receive);
-    if(run12v_receive[0]==1)
-    {
-      Run12v = 1;
-      run12v_send[0]=1;
-    }
-    else
-    {
-      Run12v = 0;
-      run12v_send[0]=0;
-    }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,run12v_send);
-  }
-}
-
 void Motor1Read()
 {
   uint8_t cmd_array[1]={CMD_PS_CHECK_16V_1};
@@ -381,32 +355,6 @@ void Motor2Read()
   }
 }
 
-void Run12vRead()
-{
-  uint8_t cmd_array[1]={CMD_PS_CHECK_12V};
-  uint8_t run12v_receive[255]={0};
-  uint8_t run12v_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,run12v_receive);
-    if(run12v_receive[0]==1)
-    {
-      if(Run12v.read())
-      {
-        run12v_send[0] = 1;
-      }
-      else
-      {
-        run12v_send[0] = 0;
-      }
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,run12v_send);
-    }
-  }
-}
-
 int main()
 {
   LedBatt1 = 1;
@@ -420,6 +368,19 @@ int main()
   RunMotor1 = 0;            //  On s'assure que les 2 moteurs sont éteints
   RunMotor2 = 0;
 
+  short temp;
+
+  while (1)
+  {
+    temp = (short) temperature.getTemp();
+
+    if (temp)
+    {
+      LedBatt3 = 0;
+    }
+
+    ThisThread::sleep_for(1000);
+  }
   //RS485::init(PSU_ID);
 
   /*float thing;
@@ -460,15 +421,9 @@ int main()
   threadmotor2toggle.start(Motor2Toggle);
   threadmotor2toggle.set_priority(osPriorityHigh);
 
-  thread12vtoggle.start(Run12vToggle);
-  thread12vtoggle.set_priority(osPriorityHigh);
-
   threadmotor1read.start(Motor1Read);
   threadmotor1read.set_priority(osPriorityHigh);
 
   threadmotor2read.start(Motor2Read);
   threadmotor2read.set_priority(osPriorityHigh);
-
-  thread12vread.start(Run12vRead);
-  thread12vread.set_priority(osPriorityHigh);
 }

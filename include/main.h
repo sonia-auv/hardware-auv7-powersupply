@@ -6,12 +6,14 @@
 #include "pinDef.h"
 #include "powersupply_utility.h"
 #include "INA226.h"
+#include "TC74A5.h"
 #include "RS485/RS485.h"
 #include "RS485/RS485_definition.h"
 
 #define adress12v (0x44 << 1)
 #define adress16V1 (0x41 << 1)
 #define adress16V2 (0x40 << 1)
+#define adressTemp (0x4D << 1)
 
 #define CONFIG      0x4527
 #define CALIBRATION 0x1062
