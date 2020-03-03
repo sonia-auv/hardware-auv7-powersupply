@@ -8,6 +8,7 @@
 
 #include "main.h"
 
+// Board Address (0 to 3)
 #define PSU_ID SLAVE_powersupply0
 
 Thread feedbackPSU;
@@ -22,6 +23,7 @@ Thread threadmotor1toggle;
 Thread threadmotor2toggle;
 Thread threadmotor1read;
 Thread threadmotor2read;
+Thread threadtemperature;
 
 I2C i2c_bus(I2CSDA,I2CSCL);
 INA226 sensorm1(&i2c_bus, adress16V1);
@@ -55,21 +57,21 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
       LedBatt1 = 0;
       LedBatt2 = 0;
       LedBatt3 = 0;
-      LedBatt4 = 0;
+      LedBatt4 = 1;
     }
     else if (value <= 0.462 && value > 0.445)       // 16,4V - 15,8V 
     {
       LedBatt1 = 1;
       LedBatt2 = 0;
       LedBatt3 = 0;
-      LedBatt4 = 0;
+      LedBatt4 = 1;
     }
     else if (value <= 0.445 && value > 0.433)      // 15,8V - 15,4V
     {
       LedBatt1 = 1;
       LedBatt2 = 1;
       LedBatt3 = 0;
-      LedBatt4 = 0;
+      LedBatt4 = 1;
     }
     else                                           // 15,4V - Sors la batterie caliss
     {
@@ -355,6 +357,27 @@ void Motor2Read()
   }
 }
 
+void TemperatureRead()
+{
+  uint8_t cmd_array[1]={CMD_PS_temperature};
+  uint8_t temp_receive[255]={0};
+  uint8_t temp_send[255]={0};
+  uint8_t nb_command = 1;
+  uint8_t nb_byte_send = 1;
+  float_t temp;
+
+  while(true)
+  {
+    RS485::read(cmd_array,nb_command,temp_receive);
+    if(temp_receive[0]==1)
+    {
+      temp = temperature.getTemp();
+      putFloatInArray(temp_send,temp);
+      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,temp_send);
+    }
+  }
+}
+
 int main()
 {
   LedBatt1 = 1;
@@ -364,32 +387,10 @@ int main()
   LedKillswitch = 1;
   LedStatusV1 = 1;
   LedStatusV2 = 1;
-  Run12v = 1;               //  Allume le regulateur 12V
   RunMotor1 = 0;            //  On s'assure que les 2 moteurs sont éteints
   RunMotor2 = 0;
 
-  short temp;
-
-  while (1)
-  {
-    temp = (short) temperature.getTemp();
-
-    if (temp)
-    {
-      LedBatt3 = 0;
-    }
-
-    ThisThread::sleep_for(1000);
-  }
-  //RS485::init(PSU_ID);
-
-  /*float thing;
-  sensor12v.setConfig(CONFIG);
-  ThisThread::sleep_for(delay);
-  sensor12v.setCalibration(CALIBRATION);
-  sensor12v.setCurrentLSB(CURRENTLSB);
-  ThisThread::sleep_for(delay);
-  thing = sensor12v.getCurrent();*/
+  RS485::init(PSU_ID);
 
   feedbackPSU.start(ledfeedbackFunction);
   feedbackPSU.set_priority(osPriorityAboveNormal1);
@@ -426,4 +427,7 @@ int main()
 
   threadmotor2read.start(Motor2Read);
   threadmotor2read.set_priority(osPriorityHigh);
+
+  threadtemperature.start(TemperatureRead);
+  threadtemperature.set_priority(osPriorityAboveNormal3);
 }
