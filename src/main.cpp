@@ -7,6 +7,7 @@
  ***/
 
 #include "main.h"
+#include <unity.h>
 
 // Board Address (0 to 3)
 #define PSU_ID SLAVE_powersupply0
@@ -378,6 +379,70 @@ void TemperatureRead()
   }
 }
 
+void test_function()
+{
+  uint8_t cmd_array[1] = {CMD_PS_VBatt};
+  uint8_t battery_receive[255]= {0};
+  uint8_t nb_command = 1;
+  float_t value = 0;
+  
+  RS485::read(cmd_array,nb_command,battery_receive);
+
+  RS485::write(PSU_ID,cmd_array[0],1,battery_receive);
+
+  value = temperature.getTemp();
+
+  if(value != 0)
+  {
+    LedKillswitch = 0;
+  }
+
+  value = calcul_tension(Battery_16V.read());
+  if(value !=0)
+  {
+    LedBatt1 = 0;
+  }
+
+  value = 0;
+
+  value = sensor12v.getBusVolt();
+
+  if(value !=0)
+  {
+    LedBatt2 = 0;
+  }
+
+  value = 0;
+
+  value = sensor12v.getCurrent();
+
+  if(value !=0)
+  {
+    LedBatt3 = 0;
+  }
+
+  RunMotor1 = 1;
+  value = 0;
+
+  value = sensorm1.getBusVolt();
+
+  if(value !=0)
+  {
+    LedStatusV1 = 0;
+  }
+
+  RunMotor2 = 1;
+  value = 0;
+
+  value = sensorm2.getBusVolt();
+
+  if(value !=0)
+  {
+    LedStatusV2 = 0;
+  }
+
+}
+
 int main()
 {
   LedBatt1 = 1;
@@ -390,9 +455,18 @@ int main()
   RunMotor1 = 0;            //  On s'assure que les 2 moteurs sont éteints
   RunMotor2 = 0;
 
+  sensor12v.setConfig(CONFIG);
+  sensor12v.setCalibration(CALIBRATION);
+  sensorm1.setConfig(CONFIG);
+  sensorm1.setCalibration(CALIBRATION);
+  sensorm2.setConfig(CONFIG);
+  sensorm2.setCalibration(CALIBRATION);
+
   RS485::init(PSU_ID);
 
-  feedbackPSU.start(ledfeedbackFunction);
+  test_function();
+
+  /*feedbackPSU.start(ledfeedbackFunction);
   feedbackPSU.set_priority(osPriorityAboveNormal1);
 
   threadbattery4s.start(Battery4SVoltage);
@@ -429,5 +503,5 @@ int main()
   threadmotor2read.set_priority(osPriorityHigh);
 
   threadtemperature.start(TemperatureRead);
-  threadtemperature.set_priority(osPriorityAboveNormal3);
+  threadtemperature.set_priority(osPriorityAboveNormal3);*/
 }
