@@ -10,7 +10,7 @@
 #include "RS485/RS485.h"
 #include "RS485/RS485_definition.h"
 
-#define delay 500
+#define delay 300
 
 //###################################################
 //              I2C SLAVE DEFINITION
