@@ -73,7 +73,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
       LedBatt3 = 0;
       LedBatt4 = 1;
     }
-    else                                           // 15,4V - Sors la batterie caliss
+    else                                           // 15,4V - 0V
     {
       LedBatt1 = 1;
       LedBatt2 = 1;
@@ -108,7 +108,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
   }
 }
 
-void Battery4SVoltage()
+void Battery4SVoltage()   //Fonction pour l'envoi du voltage de la batterie sur RS485
 {
   uint8_t cmd_array[1] = {CMD_PS_VBatt};
   uint8_t battery_receive[255]= {0};
@@ -129,7 +129,7 @@ void Battery4SVoltage()
   }
 }
 
-void Supply12vVoltage()
+void Supply12vVoltage()   // Fonction pour l'envoi du voltage du channel 12V sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_V12};
   uint8_t voltage12v_receive[255]={0};
@@ -150,7 +150,7 @@ void Supply12vVoltage()
   }
 }
 
-void Supply12vCurrent()
+void Supply12vCurrent()   // Fonction pour l'envoi du courant du channel 12V sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_C12};
   uint8_t voltage12v_receive[255]={0};
@@ -171,7 +171,7 @@ void Supply12vCurrent()
   }
 }
 
-void Motor1Voltage()
+void Motor1Voltage()    // Fonction pour l'envoi du voltage du moteur 1 sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_V16_1};
   uint8_t motor1_receive[255]={0};
@@ -192,7 +192,7 @@ void Motor1Voltage()
   }
 }
 
-void Motor1Current()
+void Motor1Current()    // Fonction pour l'envoi du courant du moteur 1 sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_C16_1};
   uint8_t motor1_receive[255]={0};
@@ -213,7 +213,7 @@ void Motor1Current()
   }
 }
 
-void Motor2Voltage()
+void Motor2Voltage()    // Fonction pour l'envoi du voltage du moteur 2 sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_V16_2};
   uint8_t motor2_receive[255]={0};
@@ -234,7 +234,7 @@ void Motor2Voltage()
   }
 }
 
-void Motor2Current()
+void Motor2Current()    // Fonction pour l'envoi du courant du moteur 2 sur RS485
 {
   uint8_t cmd_array[1]={CMD_PS_C16_2};
   uint8_t motor2_receive[255]={0};
@@ -255,7 +255,7 @@ void Motor2Current()
   }
 }
 
-void Motor1Toggle()
+void Motor1Toggle()   // Fonction pour allumer le moteur 1 avec RS485
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_1};
   uint8_t motor1_receive[255]={0};
@@ -280,7 +280,7 @@ void Motor1Toggle()
   }
 }
 
-void Motor2Toggle()
+void Motor2Toggle()   // Fonction pour allumer le moteur 2 avec RS485
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
   uint8_t motor2_receive[255]={0};
@@ -305,7 +305,7 @@ void Motor2Toggle()
   }
 }
 
-void Motor1Read()
+void Motor1Read()   // Fonction pour vérifier de l'état du moteur 1 avec RS485
 {
   uint8_t cmd_array[1]={CMD_PS_CHECK_16V_1};
   uint8_t motor1_receive[255]={0};
@@ -331,7 +331,7 @@ void Motor1Read()
   }
 }
 
-void Motor2Read()
+void Motor2Read()   // Fonction pour vérifier de l'état du moteur 2 avec RS485
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
   uint8_t motor2_receive[255]={0};
@@ -357,7 +357,7 @@ void Motor2Read()
   }
 }
 
-void TemperatureRead()
+void TemperatureRead()    // Fonction pour la température du power supply avec RS485
 {
   uint8_t cmd_array[1]={CMD_PS_temperature};
   uint8_t temp_receive[255]={0};
