@@ -80,7 +80,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
       LedBatt3 = 0;
       LedBatt4 = 1;
     }
-    else                                           // 15,4V - Sors la batterie caliss
+    else                                           // 15,4V - 0V
     {
       LedBatt1 = 1;
       LedBatt2 = 1;
