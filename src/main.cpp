@@ -9,7 +9,7 @@
 #include "main.h"
 
 // Board Address (0 to 3)
-#define PSU_ID SLAVE_powersupply0
+#define PSU_ID SLAVE_powersupply3
 
 Thread feedbackPSU;
 Thread threadbattery4s;
@@ -35,6 +35,7 @@ TC74A5 temperature(&i2c_bus, adressTemp);
 void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
   double_t value;               //  Un peu de sauce pour le fun
+  uint8_t i = 0;
   LedBatt4 = 0;
   ThisThread::sleep_for(delay);
   LedBatt3 = 0;
@@ -52,7 +53,12 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
 
   while(true)
   {
-    value = Battery_16V.read();                    // Valeur de la batterie donnée avec un test pratique (voir Excel)
+    for(i = 0; i < 10; ++i)
+    {
+      value += Battery_16V.read();                  // Valeur de la batterie donnée avec un test pratique (voir Excel)
+      ThisThread::sleep_for(delay);
+    }
+    value = value / (double_t)i;
     if(value > 0.462)                               // Full - 16,4V
     {
       LedBatt1 = 0;
@@ -89,7 +95,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedKillswitch = 0;
     }
-    if(StatusMotor1 == 0)
+    if(RunMotor1.read())
     {
       LedStatusV1 = 0;
     }
@@ -97,7 +103,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedStatusV1 = 1;
     }
-    if(StatusMotor2 == 0)
+    if(RunMotor2.read())
     {
       LedStatusV2 = 0;
     }
@@ -105,7 +111,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedStatusV2 = 1;
     }
-    ThisThread::sleep_for(1000);
+    value = 0;
   }
 }
 
@@ -117,13 +123,20 @@ void Battery4SVoltage()
   uint8_t nb_command = 1;
   uint8_t nb_byte_send = 4;
   float_t voltage_battery;
+  uint8_t i;
 
   while(true)
   {
     RS485::read(cmd_array,nb_command,battery_receive);
-    voltage_battery = calcul_tension(Battery_16V.read());
+    for(i = 0; i < 10; ++i)
+    {
+      voltage_battery += calcul_tension(Battery_16V.read());
+      ThisThread::sleep_for(delay);
+    }
+    voltage_battery = voltage_battery / (float_t)i;
     putFloatInArray(battery_send,voltage_battery);
     RS485::write(PSU_ID,cmd_array[0],nb_byte_send,battery_send);
+    voltage_battery = 0;
     }
   }
 
@@ -309,7 +322,7 @@ void Motor1Read()
   while(true)
   {
   RS485::read(cmd_array,nb_command,motor1_receive);
-  if(StatusMotor1 == 0)
+  if(RunMotor1.read())
   {
      motor1_send[0] = 1;
   }
@@ -332,7 +345,7 @@ void Motor2Read()
   while(true)
   {
     RS485::read(cmd_array,nb_command,motor2_receive);
-    if(StatusMotor2 == 0)
+    if(RunMotor2.read())
     {
       motor2_send[0] = 1;
     }
@@ -350,7 +363,7 @@ void TemperatureRead()
   uint8_t temp_receive[255]={0};
   uint8_t temp_send[255]={0};
   uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
+  uint8_t nb_byte_send = 4;
   float_t temp;
 
   while(true)
@@ -456,22 +469,22 @@ int main()
   threadbattery4s.set_priority(osPriorityHigh);
 
   thread12v.start(Supply12vVoltage);
-  thread12v.set_priority(osPriorityAboveNormal3);
+  thread12v.set_priority(osPriorityHigh);
 
   thread12c.start(Supply12vCurrent);
-  thread12c.set_priority(osPriorityAboveNormal3);
+  thread12c.set_priority(osPriorityHigh);
 
   threadmotor1v.start(Motor1Voltage);
-  threadmotor1v.set_priority(osPriorityAboveNormal3);
+  threadmotor1v.set_priority(osPriorityHigh);
 
   threadmotor1c.start(Motor1Current);
-  threadmotor1c.set_priority(osPriorityAboveNormal3);
+  threadmotor1c.set_priority(osPriorityHigh);
 
   threadmotor2v.start(Motor2Voltage);
-  threadmotor2v.set_priority(osPriorityAboveNormal3);
+  threadmotor2v.set_priority(osPriorityHigh);
 
   threadmotor2c.start(Motor2Current);
-  threadmotor2c.set_priority(osPriorityAboveNormal3);
+  threadmotor2c.set_priority(osPriorityHigh);
 
   threadmotor1toggle.start(Motor1Toggle);
   threadmotor1toggle.set_priority(osPriorityHigh);
@@ -489,5 +502,5 @@ int main()
   threadmotor2read.set_priority(osPriorityHigh);
 
   threadtemperature.start(TemperatureRead);
-  threadtemperature.set_priority(osPriorityAboveNormal3);
+  threadtemperature.set_priority(osPriorityHigh);
 }
