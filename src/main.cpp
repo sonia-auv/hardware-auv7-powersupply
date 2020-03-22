@@ -25,6 +25,7 @@ Thread threadmotor1read;
 Thread threadmotor2read;
 Thread threadtemperature;
 
+RS485 rs(PSU_ID);
 I2C i2c_bus(I2CSDA,I2CSCL);
 INA226 sensorm1(&i2c_bus, adress16V1);
 INA226 sensorm2(&i2c_bus, adress16V2);
@@ -126,7 +127,7 @@ void Battery4SVoltage()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,battery_receive);
+    rs.read(cmd_array,nb_command,battery_receive);
     for(i = 0; i < 10; ++i)
     {
       voltage_battery += calcul_tension(Battery_16V.read());
@@ -134,7 +135,7 @@ void Battery4SVoltage()
     }
     voltage_battery = voltage_battery / (float_t)i;
     putFloatInArray(battery_send,voltage_battery);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,battery_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,battery_send);
     voltage_battery = 0;
     }
   }
@@ -150,10 +151,10 @@ void Supply12vVoltage()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,voltage12v_receive);
+    rs.read(cmd_array,nb_command,voltage12v_receive);
     voltage12v = sensor12v.getBusVolt();
     putFloatInArray(voltage12v_send,voltage12v);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
   }
 }
 
@@ -168,10 +169,10 @@ void Supply12vCurrent()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,voltage12v_receive);
+    rs.read(cmd_array,nb_command,voltage12v_receive);
     current12v = sensor12v.getCurrent();
     putFloatInArray(voltage12v_send,current12v);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
   }
 }
 
@@ -186,10 +187,10 @@ void Motor1Voltage()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor1_receive);
+    rs.read(cmd_array,nb_command,motor1_receive);
     m1voltage = sensorm1.getBusVolt();
     putFloatInArray(motor1_send,m1voltage);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
   }
 }
 
@@ -204,10 +205,10 @@ void Motor1Current()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor1_receive);
+    rs.read(cmd_array,nb_command,motor1_receive);
     currentm1 = sensorm1.getCurrent();
     putFloatInArray(motor1_send,currentm1);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
   }
 }
 
@@ -222,10 +223,10 @@ void Motor2Voltage()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor2_receive);
+    rs.read(cmd_array,nb_command,motor2_receive);
     voltagem2 = sensorm2.getBusVolt();
     putFloatInArray(motor2_send,voltagem2);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
   }
 }
 
@@ -240,10 +241,10 @@ void Motor2Current()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor2_receive);
+    rs.read(cmd_array,nb_command,motor2_receive);
     currentm2 = sensorm2.getCurrent();
     putFloatInArray(motor2_send,currentm2);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
   }
 }
 
@@ -257,7 +258,7 @@ void Motor1Toggle()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor1_receive);
+    rs.read(cmd_array,nb_command,motor1_receive);
     if(motor1_receive[0]==1)
     {
       RunMotor1 = 1;
@@ -268,7 +269,7 @@ void Motor1Toggle()
       RunMotor1 = 0;
       motor1_send[0]=0;
     }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
   }
 }
 
@@ -282,7 +283,7 @@ void Motor2Toggle()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor2_receive);
+    rs.read(cmd_array,nb_command,motor2_receive);
     if(motor2_receive[0]==1)
     {
       RunMotor2 = 1;
@@ -293,7 +294,7 @@ void Motor2Toggle()
       RunMotor2 = 0;
       motor2_send[0]=0;
     }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
   }
 }
 
@@ -305,7 +306,7 @@ void Supply12vRead()
   uint8_t nb_command = 1;
   uint8_t nb_byte_send = 1;
 
-  RS485::read(cmd_array,nb_command,supply12v_receive);
+  rs.read(cmd_array,nb_command,supply12v_receive);
   if(sensor12v.getBusVolt()>=10 && sensor12v.getBusVolt()<=14)
   {
     supply12v_send[0] = 1;
@@ -314,8 +315,7 @@ void Supply12vRead()
   {
     supply12v_send[0] = 0;
   }
-  
-  RS485::write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
+  rs.write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
 }
 
 void Motor1Read()
@@ -328,7 +328,7 @@ void Motor1Read()
 
   while(true)
   {
-  RS485::read(cmd_array,nb_command,motor1_receive);
+  rs.read(cmd_array,nb_command,motor1_receive);
   if(RunMotor1.read())
   {
      motor1_send[0] = 1;
@@ -337,7 +337,7 @@ void Motor1Read()
   {
     motor1_send[0] = 0;
   }
-  RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
+  rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
   }
 }
 
@@ -351,7 +351,7 @@ void Motor2Read()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,motor2_receive);
+    rs.read(cmd_array,nb_command,motor2_receive);
     if(RunMotor2.read())
     {
       motor2_send[0] = 1;
@@ -360,7 +360,7 @@ void Motor2Read()
     {
       motor2_send[0] = 0;
     }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
   }
 }
 
@@ -375,10 +375,10 @@ void TemperatureRead()
 
   while(true)
   {
-    RS485::read(cmd_array,nb_command,temp_receive);
+    rs.read(cmd_array,nb_command,temp_receive);
     temp = temperature.getTemp();
     putFloatInArray(temp_send,temp);
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,temp_send);
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,temp_send);
   }
 }
 
@@ -389,9 +389,9 @@ void test_function()
   uint8_t nb_command = 1;
   float_t value = 0;
   
-  RS485::read(cmd_array,nb_command,battery_receive);
+  rs.read(cmd_array,nb_command,battery_receive);
 
-  RS485::write(PSU_ID,cmd_array[0],1,battery_receive);
+  rs.write(PSU_ID,cmd_array[0],1,battery_receive);
 
   value = temperature.getTemp();
 
@@ -400,14 +400,15 @@ void test_function()
     LedKillswitch = 0;
   }
 
+  value = 0;
   value = calcul_tension(Battery_16V.read());
+  
   if(value !=0)
   {
     LedBatt1 = 0;
   }
 
   value = 0;
-
   value = sensor12v.getBusVolt();
 
   if(value !=0)
@@ -415,18 +416,8 @@ void test_function()
     LedBatt2 = 0;
   }
 
-  value = 0;
-
-  value = sensor12v.getCurrent();
-
-  if(value !=0)
-  {
-    LedBatt3 = 0;
-  }
-
   RunMotor1 = 1;
   value = 0;
-
   value = sensorm1.getBusVolt();
 
   if(value !=0)
@@ -436,7 +427,6 @@ void test_function()
 
   RunMotor2 = 1;
   value = 0;
-
   value = sensorm2.getBusVolt();
 
   if(value !=0)
@@ -464,8 +454,6 @@ int main()
   sensorm1.setCalibration(CALIBRATION);
   sensorm2.setConfig(CONFIG);
   sensorm2.setCalibration(CALIBRATION);
-
-  RS485::init(PSU_ID);
 
   //test_function();
 
