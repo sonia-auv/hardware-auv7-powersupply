@@ -8,8 +8,7 @@
 
 #include "main.h"
 
-// Board Address (0 to 3)
-#define PSU_ID SLAVE_powersupply3
+#define PSU_ID SLAVE_powersupply0
 
 Thread feedbackPSU;
 Thread threadbattery4s;
