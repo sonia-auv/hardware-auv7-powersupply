@@ -306,7 +306,15 @@ void Supply12vRead()
   uint8_t nb_byte_send = 1;
 
   RS485::read(cmd_array,nb_command,supply12v_receive);
-  supply12v_send[0] = 1;
+  if(sensor12v.getBusVolt()>=10 && sensor12v.getBusVolt()<=14)
+  {
+    supply12v_send[0] = 1;
+  }
+  else
+  {
+    supply12v_send[0] = 0;
+  }
+  
   RS485::write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
 }
 
