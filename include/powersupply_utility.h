@@ -9,37 +9,37 @@
 #include "pinDef.h"
 
 /**
- * Calculation of voltage at the input of a voltage divider
+ * @brief Calculation of voltage at the input of a voltage divider
  * 
  * @param value obtained value from the divider
  * @return voltage at R1 of the voltage divider
-*/
+ */
 float_t calcul_tension(double_t value);
 
 /**
- * Puts a float in a array
+ * @brief Puts a float in a array
  * 
  * @param array pointer of the array to put data value in
  * @param value float that has to be put in the array 
-*/
+ */
 void putFloatInArray(uint8_t * array, float_t value);
 
 /**
- * Put a char array in a array
+ * @brief Put a char array in a array
  * 
  * @param array pointer of the array for the converted data
  * @param data pointer of an array of char
  * @param multiplicator float that can multiply the end result (optional)
-*/
+ */
 void putCharInArray(uint8_t * array, char * data, float_t multiplicator = 1);
 
 /**
- * Transform a char array in a float
+ * @brief Transform a char array in a float
  * 
  * @param data pointer of an array of char
  * @param multiplicator float that can multiply the end result (optional)
  * @return value of the transformation
-*/
+ */
 float_t putCharInFloat(char * data, float_t multiplicator = 1);
 
 #endif 

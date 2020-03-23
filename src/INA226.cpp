@@ -72,8 +72,12 @@ float INA226::getShuntVolt()
     
     sign = buff[0] & 0x80;
     tmp = ((buff[0] & 0x7F) << 8) | buff[1];
-    if(!sign) return (float)tmp*SHUNT_LSB;                   //positive calulation.
-    else return ((float)tmp-32767)*SHUNT_LSB;                 //negative calculation.
+
+    //positive calulation.
+    if(!sign) return (float)tmp*SHUNT_LSB;
+
+    //negative calculation.
+    else return ((float)tmp-32767)*SHUNT_LSB;
 }
 
 float INA226::getBusVolt()
@@ -90,8 +94,12 @@ float INA226::getBusVolt()
     
     sign = buff[0] & 0x80;
     tmp = ((buff[0] & 0x7F) << 8) | buff[1];
-    if(!sign) return ((float)tmp)*BUS_LSB;                   //positive calulation.
-    else return ((float)tmp-32767)*BUS_LSB;                 //negative calculation.
+
+    //positive calulation.
+    if(!sign) return ((float)tmp)*BUS_LSB;
+
+    //negative calculation.
+    else return ((float)tmp-32767)*BUS_LSB;
 }
 
 float INA226::getCurrent()
@@ -108,8 +116,12 @@ float INA226::getCurrent()
     
     sign = buff[0] & 0x80;
     tmp = ((buff[0] & 0x7F) << 8) | buff[1];
-    if(!sign) return (float)tmp*CURR_LSB;                   //positive calulation.
-    else return ((float)tmp-32767)*CURR_LSB;                 //negative calculation.
+
+    //positive calulation.
+    if(!sign) return (float)tmp*CURR_LSB;
+
+    //negative calculation.
+    else return ((float)tmp-32767)*CURR_LSB;
 }
 
 float INA226::getPower()
@@ -126,8 +138,12 @@ float INA226::getPower()
     
     sign = buff[0] & 0x80;
     tmp = ((buff[0] & 0x7F) << 8) | buff[1];
-    if(!sign) return (float)tmp*25*CURR_LSB;                   //positive calulation.
-    else return ((float)tmp-32767)*25*CURR_LSB;                 //negative calculation.
+
+    //positive calulation.
+    if(!sign) return (float)tmp*25*CURR_LSB; 
+
+    //negative calculation.                
+    else return ((float)tmp-32767)*25*CURR_LSB;
 }
 
 void INA226::setCalibration(unsigned short reg)
@@ -210,7 +226,7 @@ void INA226::setShuntRValue(float val)
     ShuntR = val;
 }
 
-float INA226::getShuntRValue(void)
+float INA226::getShuntRValue()
 {
     return ShuntR;
 }
@@ -221,7 +237,7 @@ void INA226::setCurrentLSB(float val)
     CURR_LSB = val;
 }
 
-float INA226::getCurrentLSB(float val)
+float INA226::getCurrentLSB()
 {
     return CURR_LSB;
 }

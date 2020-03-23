@@ -18,18 +18,18 @@ private :
 
 public :
     /**
-     * Init of the class
+     * @brief Init of the class
      * 
      * @param i2c pointer of the bus used on the microcontroller
      * @param address of the TC74A5 
-    */
+     */
     TC74A5(I2C * i2c, char address);
 
     /**
-     * Get the temperature of the board
+     * @brief Get the temperature of the board
      *  
      * @return data from the sensor in char
-    */
+     */
     char getTemp();
 
 };

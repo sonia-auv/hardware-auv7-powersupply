@@ -31,9 +31,12 @@ INA226 sensorm2(&i2c_bus, adress16V2);
 INA226 sensor12v(&i2c_bus, adress12v);
 TC74A5 temperature(&i2c_bus, adressTemp);
 
-void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
-{
-  double_t value;               //  Un peu de sauce pour le fun
+/**
+ * @brief Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
+ * 
+ */
+void ledfeedbackFunction()
+  double_t value;
   LedBatt4 = 0;
   ThisThread::sleep_for(delay);
   LedBatt3 = 0;
@@ -51,36 +54,44 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
 
   while(true)
   {
-    value = Battery_16V.read();                    // Valeur de la batterie donnée avec un test pratique (voir Excel)
-    if(value > 0.462)                               // Full - 16,4V
+    // Valeur de la batterie donnée avec un test pratique (voir Excel)
+    value = Battery_16V.read();
+
+    // Full - 16,4V
+    if(value > 0.462)                               
     {
       LedBatt1 = 0;
       LedBatt2 = 0;
       LedBatt3 = 0;
       LedBatt4 = 1;
     }
-    else if (value <= 0.462 && value > 0.445)       // 16,4V - 15,8V 
+    // 16,4V - 15,8V 
+    else if (value <= 0.462 && value > 0.445)
     {
       LedBatt1 = 1;
       LedBatt2 = 0;
       LedBatt3 = 0;
       LedBatt4 = 1;
     }
-    else if (value <= 0.445 && value > 0.433)      // 15,8V - 15,4V
+    // 15,8V - 15,4V
+    else if (value <= 0.445 && value > 0.433)
     {
       LedBatt1 = 1;
       LedBatt2 = 1;
       LedBatt3 = 0;
       LedBatt4 = 1;
     }
-    else                                           // 15,4V - 0V
+    // 15,4V - 0V
+    else                                           
     {
       LedBatt1 = 1;
       LedBatt2 = 1;
       LedBatt3 = 1;
       LedBatt4 = 0;
     }
-    if(Killswitch == 0)                       // Double inversion
+
+    // Double inversion
+    if(Killswitch == 0)                       
     {
       LedKillswitch = 1;
     }
@@ -88,6 +99,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedKillswitch = 0;
     }
+
     if(RunMotor1.read())
     {
       LedStatusV1 = 0;
@@ -96,6 +108,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedStatusV1 = 1;
     }
+
     if(RunMotor2.read())
     {
       LedStatusV2 = 0;
@@ -104,11 +117,16 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     {
       LedStatusV2 = 1;
     }
+
     ThisThread::sleep_for(1000);
   }
 }
 
-void Battery4SVoltage()   //Fonction pour l'envoi du voltage de la batterie sur RS485
+/**
+ * @brief Fonction pour l'envoi du voltage de la batterie sur RS485
+ * 
+ */
+void Battery4SVoltage()
 {
   uint8_t cmd_array[1] = {CMD_PS_VBatt};
   uint8_t battery_receive[255]= {0};
@@ -129,7 +147,11 @@ void Battery4SVoltage()   //Fonction pour l'envoi du voltage de la batterie sur 
   }
 }
 
-void Supply12vVoltage()   // Fonction pour l'envoi du voltage du channel 12V sur RS485
+/**
+ * @brief Fonction pour l'envoi du voltage du channel 12V sur RS485
+ * 
+ */
+void Supply12vVoltage()
 {
   uint8_t cmd_array[1]={CMD_PS_V12};
   uint8_t voltage12v_receive[255]={0};
@@ -150,7 +172,11 @@ void Supply12vVoltage()   // Fonction pour l'envoi du voltage du channel 12V sur
   }
 }
 
-void Supply12vCurrent()   // Fonction pour l'envoi du courant du channel 12V sur RS485
+/**
+ * @brief Fonction pour l'envoi du courant du channel 12V sur RS485
+ * 
+ */
+void Supply12vCurrent()
 {
   uint8_t cmd_array[1]={CMD_PS_C12};
   uint8_t voltage12v_receive[255]={0};
@@ -171,7 +197,11 @@ void Supply12vCurrent()   // Fonction pour l'envoi du courant du channel 12V sur
   }
 }
 
-void Motor1Voltage()    // Fonction pour l'envoi du voltage du moteur 1 sur RS485
+/**
+ * @brief Fonction pour l'envoi du voltage du moteur 1 sur RS485
+ * 
+ */
+void Motor1Voltage()
 {
   uint8_t cmd_array[1]={CMD_PS_V16_1};
   uint8_t motor1_receive[255]={0};
@@ -192,7 +222,11 @@ void Motor1Voltage()    // Fonction pour l'envoi du voltage du moteur 1 sur RS48
   }
 }
 
-void Motor1Current()    // Fonction pour l'envoi du courant du moteur 1 sur RS485
+/**
+ * @brief Fonction pour l'envoi du courant du moteur 1 sur RS485
+ * 
+ */
+void Motor1Current()
 {
   uint8_t cmd_array[1]={CMD_PS_C16_1};
   uint8_t motor1_receive[255]={0};
@@ -213,7 +247,11 @@ void Motor1Current()    // Fonction pour l'envoi du courant du moteur 1 sur RS48
   }
 }
 
-void Motor2Voltage()    // Fonction pour l'envoi du voltage du moteur 2 sur RS485
+/**
+ * @brief Fonction pour l'envoi du voltage du moteur 2 sur RS485
+ * 
+ */
+void Motor2Voltage()
 {
   uint8_t cmd_array[1]={CMD_PS_V16_2};
   uint8_t motor2_receive[255]={0};
@@ -234,7 +272,11 @@ void Motor2Voltage()    // Fonction pour l'envoi du voltage du moteur 2 sur RS48
   }
 }
 
-void Motor2Current()    // Fonction pour l'envoi du courant du moteur 2 sur RS485
+/**
+ * @brief Fonction pour l'envoi du courant du moteur 2 sur RS485
+ * 
+ */
+void Motor2Current()
 {
   uint8_t cmd_array[1]={CMD_PS_C16_2};
   uint8_t motor2_receive[255]={0};
@@ -255,7 +297,11 @@ void Motor2Current()    // Fonction pour l'envoi du courant du moteur 2 sur RS48
   }
 }
 
-void Motor1Toggle()   // Fonction pour allumer le moteur 1 avec RS485
+/**
+ * @brief Fonction pour allumer le moteur 1 avec RS485
+ * 
+ */
+void Motor1Toggle()
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_1};
   uint8_t motor1_receive[255]={0};
@@ -280,7 +326,11 @@ void Motor1Toggle()   // Fonction pour allumer le moteur 1 avec RS485
   }
 }
 
-void Motor2Toggle()   // Fonction pour allumer le moteur 2 avec RS485
+/**
+ * @brief Fonction pour allumer le moteur 2 avec RS485
+ * 
+ */
+void Motor2Toggle()
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
   uint8_t motor2_receive[255]={0};
@@ -305,7 +355,11 @@ void Motor2Toggle()   // Fonction pour allumer le moteur 2 avec RS485
   }
 }
 
-void Motor1Read()   // Fonction pour vérifier de l'état du moteur 1 avec RS485
+/**
+ * @brief Fonction pour vérifier de l'état du moteur 1 avec RS485
+ * 
+ */
+void Motor1Read()
 {
   uint8_t cmd_array[1]={CMD_PS_CHECK_16V_1};
   uint8_t motor1_receive[255]={0};
@@ -331,7 +385,11 @@ void Motor1Read()   // Fonction pour vérifier de l'état du moteur 1 avec RS485
   }
 }
 
-void Motor2Read()   // Fonction pour vérifier de l'état du moteur 2 avec RS485
+/**
+ * @brief Fonction pour vérifier de l'état du moteur 2 avec RS485
+ * 
+ */
+void Motor2Read()
 {
   uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
   uint8_t motor2_receive[255]={0};
@@ -357,7 +415,11 @@ void Motor2Read()   // Fonction pour vérifier de l'état du moteur 2 avec RS485
   }
 }
 
-void TemperatureRead()    // Fonction pour la température du power supply avec RS485
+/**
+ * @brief Fonction pour la température du power supply avec RS485
+ * 
+ */
+void TemperatureRead()
 {
   uint8_t cmd_array[1]={CMD_PS_temperature};
   uint8_t temp_receive[255]={0};
@@ -387,7 +449,9 @@ int main()
   LedKillswitch = 1;
   LedStatusV1 = 1;
   LedStatusV2 = 1;
-  RunMotor1 = 0;            //  On s'assure que les 2 moteurs sont éteints
+
+  //  On s'assure que les 2 moteurs sont éteints
+  RunMotor1 = 0;            
   RunMotor2 = 0;
 
   RS485::init(PSU_ID);
