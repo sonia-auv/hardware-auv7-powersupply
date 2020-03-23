@@ -48,74 +48,137 @@
 
 /** INA226 class 
  */
-class INA226 {
+class INA226 
+{
+    
 public:
-    /** init INA226 class
-     * @param *i2c pointer to I2C serial interface
+
+    /** 
+     * @brief INA226 class constructor.
+     * 
+     * @param i2c pointer to I2C serial interface
      * @param addr sensor I2C address
      */
     INA226 (I2C* i2c, char addr); 
 
-    /** Set the configuration of the device
-     * @param reg desired Configure Register bits
+    /** 
+     * @brief Set the configuration of the device.
+     * 
+     * @param reg desired Configure Register bits.
      */
     void setConfig (unsigned short reg);
     
-    /** Get device Configuration register
+    /** 
+     * @brief Get device Configuration register.
+     * 
+     * @return unsigned short
      */  
     unsigned short getConfig();
     
-    /** Get the voltage over the shunt
-    */
+    /** 
+     * @brief Get the voltage over the shunt.
+     * 
+     * @return float
+     */
     float getShuntVolt();
 
-    /** Get the voltage of the bus rail
+    /** 
+     * @brief Get the voltage of the bus rail.
+     * 
+     * @return float
      */
     float getBusVolt();
     
-    /** Get the current measured through the shunt.
-     * in order to get the current you need to set the shut resistor value first
+    /** 
+     * @brief Get the current measured through the shunt.
+     * 
+     * @warning In order to get the current you need to set the shut resistor value first.
+     * @return float
      */  
     float getCurrent();
     
+    /**
+     * @brief Get the Power object
+     * 
+     * @return float 
+     */
     float getPower();
     
-    /** Set the Calibartion register 
-    */
+    /** 
+     * @brief Set the Calibartion register.
+     * 
+     * @param reg Register value.
+     */
     void setCalibration(unsigned short reg);
     
-    /** Get the Calibration register
-    */
+    /** 
+     * @brief Get the Calibration register.
+     * 
+     * @return unsigned short
+     */
     unsigned short getCalibration();
     
-    /** Set the mask/enable Register
-    */
+    /** 
+     * @brief Set the mask/enable Register.
+     * 
+     */
     void setMaskEnable(unsigned short reg);
     
-    /** Get the mask/enable Register
-    */
+    /** 
+     * @brief Get the mask/enable Register.
+     * 
+     * @return unsigned short
+     */
     unsigned short getMaskEnable();
     
+    /**
+     * @brief Set the Alert Limit object.
+     * 
+     * @param reg Register value.
+     */
     void setAlertLimit(unsigned short reg);
     
+    /**
+     * @brief Get the Alert Limit object.
+     * 
+     * @return unsigned short 
+     */
     unsigned short getAlertLimit();
     
-    /** Get the unique ID of the device
-    */
+    /** 
+     * @brief Get the unique ID of the device.
+     * 
+     * @return unsigned short
+     */
     unsigned short getID();
     
-    /** Set the shunt resistor
-    *@param val value in ohm
-    */
+    /** 
+     * @brief Set the shunt resistor.
+     * 
+     * @param val Value in ohm.
+     */
     void setShuntRValue(float val);
     
+    /**
+     * @brief Get the Shunt R Value object.
+     * 
+     * @return float 
+     */
     float getShuntRValue(void);
     
-    /** Set the current LSB for maximum current in decimal
-    */
+    /** 
+     * @brief Set the current LSB for maximum current in decimal.
+     * 
+     * @param val the LSB value.
+     */
     void setCurrentLSB(float val);
 
-    float getCurrentLSB(float val);
+    /**
+     * @brief Get the Current LSB object.
+     * 
+     * @return float 
+     */
+    float getCurrentLSB();
     
 protected:
 

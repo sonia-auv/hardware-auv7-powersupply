@@ -10,6 +10,12 @@
 #include "RS485/RS485.h"
 #include "RS485/RS485_definition.h"
 
+#define delay 500
+
+//###################################################
+//              I2C SLAVE DEFINITION
+//###################################################
+
 #define adress12v (0x44 << 1)
 #define adress16V1 (0x41 << 1)
 #define adress16V2 (0x40 << 1)
@@ -19,7 +25,9 @@
 #define CALIBRATION 0x1062
 #define CURRENTLSB  0.00061
 
-#define delay 500
+//###################################################
+//             PINOUT FONCTION DEFINITION
+//###################################################
 
 DigitalOut LedBatt1(LED_BATT1);
 DigitalOut LedBatt2(LED_BATT2);
