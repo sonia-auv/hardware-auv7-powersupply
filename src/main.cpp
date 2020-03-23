@@ -36,6 +36,7 @@ TC74A5 temperature(&i2c_bus, adressTemp);
  * 
  */
 void ledfeedbackFunction()
+{
   double_t value;
   LedBatt4 = 0;
   ThisThread::sleep_for(delay);
