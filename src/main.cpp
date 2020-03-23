@@ -8,6 +8,7 @@
 
 #include "main.h"
 
+// Power Supply Slave à définir ici (0 à 3)
 #define PSU_ID SLAVE_powersupply0
 
 Thread feedbackPSU;
@@ -137,8 +138,8 @@ void Battery4SVoltage()
     putFloatInArray(battery_send,voltage_battery);
     rs.write(PSU_ID,cmd_array[0],nb_byte_send,battery_send);
     voltage_battery = 0;
-    }
   }
+}
 
 void Supply12vVoltage()
 {
@@ -384,13 +385,13 @@ void TemperatureRead()
 
 void test_function()
 {
-  uint8_t cmd_array[1] = {CMD_PS_VBatt};
+  uint8_t cmd_array[1] = {CMD_PS_CHECK_12V};
   uint8_t battery_receive[255]= {0};
   uint8_t nb_command = 1;
   float_t value = 0;
   
   rs.read(cmd_array,nb_command,battery_receive);
-
+  battery_receive[0] = 2;
   rs.write(PSU_ID,cmd_array[0],1,battery_receive);
 
   value = temperature.getTemp();
