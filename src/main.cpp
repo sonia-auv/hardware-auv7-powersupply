@@ -9,7 +9,7 @@
 #include "main.h"
 
 // Power Supply Slave à définir ici (0 à 3)
-#define PSU_ID SLAVE_powersupply3
+#define PSU_ID SLAVE_powersupply0
 
 Thread feedbackPSU;
 Thread threadbattery4s;
@@ -21,6 +21,7 @@ Thread threadmotor2v;
 Thread threadmotor2c;
 Thread threadmotor1toggle;
 Thread threadmotor2toggle;
+Thread threademergencystop;
 Thread thread12vread;
 Thread threadmotor1read;
 Thread threadmotor2read;
@@ -32,6 +33,9 @@ INA226 sensorm1(&i2c_bus, adress16V1);
 INA226 sensorm2(&i2c_bus, adress16V2);
 INA226 sensor12v(&i2c_bus, adress12v);
 TC74A5 temperature(&i2c_bus, adressTemp);
+
+uint8_t enableMotor1;
+uint8_t enableMotor2;
 
 void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
@@ -263,11 +267,13 @@ void Motor1Toggle()
     if(motor1_receive[0]==1)
     {
       RunMotor1 = 1;
+      enableMotor1 = 1;
       motor1_send[0]=1;
     }
     else
     {
       RunMotor1 = 0;
+      enableMotor1 = 0;
       motor1_send[0]=0;
     }
     rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
@@ -288,14 +294,34 @@ void Motor2Toggle()
     if(motor2_receive[0]==1)
     {
       RunMotor2 = 1;
+      enableMotor2 = 1;
       motor2_send[0]=1;
     }
     else
     {
       RunMotor2 = 0;
+      enableMotor2 = 0;
       motor2_send[0]=0;
     }
     rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
+  }
+}
+
+void EmergencyStop()
+{
+  while(true)
+  {
+    if(Killswitch == 1)
+    {
+      RunMotor1 = 0;
+      RunMotor2 = 0;
+    }
+    else if (Killswitch == 0 && enableMotor1 == 1 && enableMotor2 == 1)
+    {
+      RunMotor1 = 1;
+      RunMotor2 = 1;
+    }
+    ThisThread::sleep_for(200);
   }
 }
 
@@ -491,6 +517,9 @@ int main()
 
   threadmotor2toggle.start(Motor2Toggle);
   threadmotor2toggle.set_priority(osPriorityHigh);
+
+  threademergencystop.start(EmergencyStop);
+  threademergencystop.set_priority(osPriorityAboveNormal1);
 
   thread12vread.start(Supply12vRead);
   thread12vread.set_priority(osPriorityHigh);
