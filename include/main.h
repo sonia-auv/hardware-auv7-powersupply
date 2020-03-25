@@ -11,6 +11,7 @@
 #include "RS485/RS485_definition.h"
 
 #define delay 300
+#define battery_delay 20
 
 //###################################################
 //              I2C SLAVE DEFINITION

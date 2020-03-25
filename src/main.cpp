@@ -9,7 +9,7 @@
 #include "main.h"
 
 // Power Supply Slave à définir ici (0 à 3)
-#define PSU_ID SLAVE_powersupply0
+#define PSU_ID SLAVE_powersupply3
 
 Thread feedbackPSU;
 Thread threadbattery4s;
@@ -57,7 +57,7 @@ void ledfeedbackFunction()      //  Logique des LEDs est inversée 0 pour allume
     for(i = 0; i < 10; ++i)
     {
       value += Battery_16V.read();                  // Valeur de la batterie donnée avec un test pratique (voir Excel)
-      ThisThread::sleep_for(delay);
+      ThisThread::sleep_for(battery_delay);
     }
     value = value / (double_t)i;
     if(value > 0.462)                               // Full - 16,4V
@@ -132,7 +132,7 @@ void Battery4SVoltage()
     for(i = 0; i < 10; ++i)
     {
       voltage_battery += calcul_tension(Battery_16V.read());
-      ThisThread::sleep_for(delay);
+      ThisThread::sleep_for(battery_delay);
     }
     voltage_battery = voltage_battery / (float_t)i;
     putFloatInArray(battery_send,voltage_battery);
@@ -307,16 +307,19 @@ void Supply12vRead()
   uint8_t nb_command = 1;
   uint8_t nb_byte_send = 1;
 
-  rs.read(cmd_array,nb_command,supply12v_receive);
-  if(sensor12v.getBusVolt()>=10 && sensor12v.getBusVolt()<=14)
-  {
-    supply12v_send[0] = 1;
+  while(true)
+  {  
+    rs.read(cmd_array,nb_command,supply12v_receive);
+    if(sensor12v.getBusVolt()>=10 && sensor12v.getBusVolt()<=14)
+    {
+      supply12v_send[0] = 1;
+    }
+    else
+    {
+      supply12v_send[0] = 0;
+    }
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
   }
-  else
-  {
-    supply12v_send[0] = 0;
-  }
-  rs.write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
 }
 
 void Motor1Read()
@@ -392,6 +395,7 @@ void test_function()
   
   rs.read(cmd_array,nb_command,battery_receive);
   battery_receive[0] = 2;
+  LedBatt4 = 0;
   rs.write(PSU_ID,cmd_array[0],1,battery_receive);
 
   value = temperature.getTemp();

@@ -10,7 +10,7 @@
 
 float_t calcul_tension(double_t value)
 {
-    return (3.3*value*(R1+R2))/R2;
+    return (3.264*value*(R1+R2))/R2;
 }
 
 void putFloatInArray(uint8_t * array, float_t value)
