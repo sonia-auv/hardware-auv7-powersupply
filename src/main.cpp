@@ -325,7 +325,7 @@ void EmergencyStop()
   }
 }
 
-void Supply12vRead()
+/*void Supply12vRead()
 {
   uint8_t cmd_array[1]={CMD_PS_CHECK_12V};
   uint8_t supply12v_receive[255]={0};
@@ -346,7 +346,7 @@ void Supply12vRead()
     }
     rs.write(PSU_ID,cmd_array[0],nb_byte_send,supply12v_send);
   }
-}
+}*/
 
 void Motor1Read()
 {
@@ -412,7 +412,7 @@ void TemperatureRead()
   }
 }
 
-void test_function()
+/*void test_function()
 {
   uint8_t cmd_array[1] = {CMD_PS_CHECK_12V};
   uint8_t battery_receive[255]= {0};
@@ -465,7 +465,7 @@ void test_function()
     LedStatusV2 = 0;
   }
 
-}
+}*/
 
 int main()
 {
@@ -521,8 +521,8 @@ int main()
   threademergencystop.start(EmergencyStop);
   threademergencystop.set_priority(osPriorityAboveNormal1);
 
-  thread12vread.start(Supply12vRead);
-  thread12vread.set_priority(osPriorityHigh);
+  //thread12vread.start(Supply12vRead);
+  //thread12vread.set_priority(osPriorityHigh);
 
   threadmotor1read.start(Motor1Read);
   threadmotor1read.set_priority(osPriorityHigh);
