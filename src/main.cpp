@@ -9,7 +9,7 @@
 #include "main.h"
 
 // Power Supply Slave à définir ici (0 à 3)
-#define PSU_ID SLAVE_powersupply0
+#define PSU_ID SLAVE_powersupply3
 
 Thread feedbackPSU;
 Thread threadbattery4s;
@@ -481,10 +481,13 @@ int main()
 
   sensor12v.setConfig(CONFIG);
   sensor12v.setCalibration(CALIBRATION);
+  sensor12v.setCurrentLSB(CURRENTLSB);
   sensorm1.setConfig(CONFIG);
   sensorm1.setCalibration(CALIBRATION);
+  sensorm1.setCurrentLSB(CURRENTLSB);
   sensorm2.setConfig(CONFIG);
   sensorm2.setCalibration(CALIBRATION);
+  sensorm2.setCurrentLSB(CURRENTLSB);
 
   //test_function();
 
