@@ -121,7 +121,7 @@ float INA226::getPower()
     
     cmd = POWER;
     
-     _i2c->write(_addr,&cmd,1,true);
+    _i2c->write(_addr,&cmd,1,true);
     _i2c->read(_addr+1,buff,2);
     
     sign = buff[0] & 0x80;
@@ -146,17 +146,20 @@ unsigned short INA226::getCalibration()
     
     cmd = CAL;
     
-     _i2c->write(_addr,&cmd,1,true);
+    _i2c->write(_addr,&cmd,1,true);
     _i2c->read(_addr+1,buff,2);
+
     return (buff[0] << 8) | buff[1];
 }
 
 void INA226::setMaskEnable(unsigned short reg)
 {
     char cmd[3];
+    
     cmd[0] = MASK;
     cmd[1] = (char) ((reg & 0xFF00) >> 8);
     cmd[2] = (char) (reg & 0x00FF);
+
     _i2c->write(_addr,cmd,3);
 } 
 

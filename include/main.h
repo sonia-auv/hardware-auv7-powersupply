@@ -23,8 +23,8 @@
 #define adressTemp (0x4D << 1)
 
 #define CONFIG      0x4527
-#define CALIBRATION 0x1062
-#define CURRENTLSB  0.00061
+#define CALIBRATION 0x15C3
+#define CURRENTLSB  0.0004577636
 
 //###################################################
 //             PINOUT FONCTION DEFINITION

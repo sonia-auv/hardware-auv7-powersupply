@@ -358,16 +358,16 @@ void Motor1Read()
 
   while(true)
   {
-  rs.read(cmd_array,nb_command,motor1_receive);
-  if(RunMotor1.read())
-  {
-     motor1_send[0] = 1;
-  }
-  else
-  {
-    motor1_send[0] = 0;
-  }
-  rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
+    rs.read(cmd_array,nb_command,motor1_receive);
+    if(RunMotor1.read())
+    {
+      motor1_send[0] = 1;
+    }
+    else
+    {
+      motor1_send[0] = 0;
+    }
+    rs.write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
   }
 }
 
@@ -412,14 +412,17 @@ void TemperatureRead()
   }
 }
 
-/*void test_function()
+void test_function()
 {
   uint8_t cmd_array[1] = {CMD_PS_CHECK_12V};
   uint8_t battery_receive[255]= {0};
   uint8_t nb_command = 1;
   float_t value = 0;
   
-  rs.read(cmd_array,nb_command,battery_receive);
+  value = sensor12v.getCurrent();
+  putFloatInArray(battery_receive, value);
+
+  /*rs.read(cmd_array,nb_command,battery_receive);
   battery_receive[0] = 2;
   LedBatt4 = 0;
   rs.write(PSU_ID,cmd_array[0],1,battery_receive);
@@ -463,9 +466,9 @@ void TemperatureRead()
   if(value !=0)
   {
     LedStatusV2 = 0;
-  }
+  }*/
 
-}*/
+}
 
 int main()
 {
