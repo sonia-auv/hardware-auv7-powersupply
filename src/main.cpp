@@ -171,10 +171,16 @@ void Supply12vCurrent()
   uint8_t nb_command = 1;
   uint8_t nb_byte_send = 4;
   float_t current12v;
+  uint8_t dataready = 0;
 
   while(true)
   {
     rs.read(cmd_array,nb_command,voltage12v_receive);
+    while(dataready == 0)
+    {
+      dataready = ((sensor12v.getMaskEnable() >> 2) & 0x01);
+      ThisThread::sleep_for(2);
+    }
     current12v = sensor12v.getCurrent();
     putFloatInArray(voltage12v_send,current12v);
     rs.write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
@@ -419,8 +425,14 @@ void test_function()
   uint8_t nb_command = 1;
   float_t value = 0;
   
-  value = sensor12v.getCurrent();
+  while(value == 0)
+  {
+    value = sensorm2.getCurrent();
+    ThisThread::sleep_for(1);
+  }
   putFloatInArray(battery_receive, value);
+
+  battery_receive[5] = 1;
 
   /*rs.read(cmd_array,nb_command,battery_receive);
   battery_receive[0] = 2;
