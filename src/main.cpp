@@ -424,12 +424,14 @@ void test_function()
   uint8_t battery_receive[255]= {0};
   uint8_t nb_command = 1;
   float_t value = 0;
+  uint8_t dataready = 0;
   
-  while(value == 0)
+  while(dataready == 0)
   {
-    value = sensorm2.getCurrent();
-    ThisThread::sleep_for(1);
+    dataready = ((sensor12v.getMaskEnable() >> 2) & 0x01);
+    ThisThread::sleep_for(2);
   }
+  value = sensor12v.getCurrent();
   putFloatInArray(battery_receive, value);
 
   battery_receive[5] = 1;
@@ -504,7 +506,7 @@ int main()
   sensorm2.setCalibration(CALIBRATION);
   sensorm2.setCurrentLSB(CURRENTLSB);
 
-  //test_function();
+  test_function();
 
   feedbackPSU.start(ledfeedbackFunction);
   feedbackPSU.set_priority(osPriorityAboveNormal1);
