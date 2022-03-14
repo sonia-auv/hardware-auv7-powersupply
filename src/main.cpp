@@ -14,60 +14,57 @@ void ledFeedbackFunction(double_t batt_voltage);
 
 void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
-  while(true)
+  if(batt_voltage > 0.462)                               // Full - 16,4V
   {
-    if(batt_voltage > 0.462)                               // Full - 16,4V
-    {
-      LedBatt1 = 0;
-      LedBatt2 = 0;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    else if (batt_voltage <= 0.462 && batt_voltage > 0.445)       // 16,4V - 15,8V 
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 0;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    else if (batt_voltage <= 0.445 && batt_voltage > 0.433)      // 15,8V - 15,4V
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 1;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    else                                           // 15,4V - 0V
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 1;
-      LedBatt3 = 1;
-      LedBatt4 = 0;
-    }
-    if(Killswitch == 0)                       // Double inversion
-    {
-      LedKillswitch = 1;
-    }
-    else
-    {
-      LedKillswitch = 0;
-    }
-    if(RunMotor1.read())
-    {
-      LedStatusV1 = 0;
-    }
-    else
-    {
-      LedStatusV1 = 1;
-    }
-    if(RunMotor2.read())
-    {
-      LedStatusV2 = 0;
-    }
-    else
-    {
-      LedStatusV2 = 1;
-    }
+    LedBatt1 = 0;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.462 && batt_voltage > 0.445)       // 16,4V - 15,8V 
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.445 && batt_voltage > 0.433)      // 15,8V - 15,4V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else                                           // 15,4V - 0V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 1;
+    LedBatt4 = 0;
+  }
+  if(Killswitch == 0)                       // Double inversion
+  {
+    LedKillswitch = 1;
+  }
+  else
+  {
+    LedKillswitch = 0;
+  }
+  if(RunMotor1.read())
+  {
+    LedStatusV1 = 0;
+  }
+  else
+  {
+    LedStatusV1 = 1;
+  }
+  if(RunMotor2.read())
+  {
+    LedStatusV2 = 0;
+  }
+  else
+  {
+    LedStatusV2 = 1;
   }
 }
 
