@@ -8,36 +8,178 @@
 
 #include "main.h"
 
-// Board Address (0 to 3)
-#define PSU_ID SLAVE_powersupply0
+void initLedFunction();
+void checkMask(INA226 sensor);
+void ledFeedbackFunction(double_t batt_voltage);
 
-Thread feedbackPSU;
-Thread threadbattery4s;
-Thread thread12v;
-Thread thread12c;
-Thread threadmotor1v;
-Thread threadmotor1c;
-Thread threadmotor2v;
-Thread threadmotor2c;
-Thread threadmotor1toggle;
-Thread threadmotor2toggle;
-Thread threadmotor1read;
-Thread threadmotor2read;
-Thread threadtemperature;
-
-I2C i2c_bus(I2CSDA,I2CSCL);
-INA226 sensorm1(&i2c_bus, adress16V1);
-INA226 sensorm2(&i2c_bus, adress16V2);
-INA226 sensor12v(&i2c_bus, adress12v);
-TC74A5 temperature(&i2c_bus, adressTemp);
-
-/**
- * @brief Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
- * 
- */
-void ledfeedbackFunction()
+void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
-  double_t value;
+  if(batt_voltage > 0.462)                               // Full - 16,4V
+  {
+    LedBatt1 = 0;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.462 && batt_voltage > 0.445)       // 16,4V - 15,8V 
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.445 && batt_voltage > 0.433)      // 15,8V - 15,4V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else                                           // 15,4V - 0V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 1;
+    LedBatt4 = 0;
+  }
+  if(Killswitch == 0)                       // Double inversion
+  {
+    LedKillswitch = 1;
+  }
+  else
+  {
+    LedKillswitch = 0;
+  }
+  if(RunMotor1.read())
+  {
+    LedStatusV1 = 0;
+  }
+  else
+  {
+    LedStatusV1 = 1;
+  }
+  if(RunMotor2.read())
+  {
+    LedStatusV2 = 0;
+  }
+  else
+  {
+    LedStatusV2 = 1;
+  }
+}
+
+void readSensorCallback()
+{
+  uint8_t cmd_array[2]={CMD_VOLTAGE, CMD_CURRENT};
+  uint8_t voltage_send[255]={0};
+  uint8_t current_send[255]={0};
+  uint8_t nb_bytes_voltage = nb_alimentation*4;
+  uint8_t nb_bytes_current = nb_sensor*4;
+  double_t voltage, current, batt;
+
+  while(true)
+  {
+    for(uint8_t i = 0; i < nb_sensor; ++i)
+    {
+      checkMask(sensor[i]);
+      voltage = sensor[i].getBusVolt();
+      current = sensor[i].getCurrent();
+
+      putFloatInArray(voltage_send, voltage, i*4);
+      putFloatInArray(current_send, current, i*4);
+    }
+
+    batt = 0.0;
+    for(uint8_t i = 0; i < nb_samples; ++i)
+    {
+      batt += Battery_16V.read();                  // Valeur de la batterie donnée avec un test pratique (voir Excel)
+      ThisThread::sleep_for(battery_delay);
+    }
+    batt = batt / (double_t)nb_samples;
+    putFloatInArray(voltage_send, calcul_tension(batt, 3.3, 100000, 10000), 3*4); // Offset pour le tableau de la tension
+
+    ledFeedbackFunction(batt);
+    rs.write(PSU_ID, cmd_array[0], nb_bytes_voltage, voltage_send);
+    rs.write(PSU_ID, cmd_array[1], nb_bytes_current, current_send);
+    ThisThread::sleep_for(500);
+  }  
+}
+
+void enableMotorCallback()
+{
+  uint8_t cmd_array[1]={CMD_ACT_MOTOR};
+  uint8_t motor_receive[255]={0};
+  uint8_t motor_send[255]={0};
+  uint8_t nb_command = 1;
+  uint8_t nb_byte_send = 2;
+
+  while(true)
+  {
+    if(rs.read(cmd_array, nb_command, motor_receive) == 2)
+    {
+      enableMotor1 = motor_receive[0];
+      enableMotor2 = motor_receive[1];
+      ThisThread::sleep_for(500);
+      motor_send[0] = RunMotor1;
+      motor_send[1] = RunMotor2;
+    }
+    rs.write(PSU_ID, cmd_array[0], nb_byte_send, motor_send);
+  }
+}
+
+void readMotorCallback()
+{
+  uint8_t cmd_array[1]={CMD_READ_MOTOR};
+  uint8_t motor_send[255]={0};
+  uint8_t nb_byte_send = 2;
+
+  while(true)
+  {
+    motor_send[0] = RunMotor1;
+    motor_send[1] = RunMotor2;
+    rs.write(PSU_ID, cmd_array[0], nb_byte_send, motor_send);
+    ThisThread::sleep_for(2500);
+  }  
+}
+
+void emergencyStopCallBack()
+{
+  while(true)
+  {
+    if(Killswitch == 1)
+    {
+      RunMotor1 = 0;
+      RunMotor2 = 0;
+    }
+    else if (Killswitch == 0)
+    {
+      RunMotor1 = enableMotor1;
+      RunMotor2 = enableMotor2;
+    }
+    ThisThread::sleep_for(200);
+  }
+}
+
+// void TemperatureRead()
+// {
+//   uint8_t cmd_array[1]={CMD_PS_temperature};
+//   uint8_t temp_receive[255]={0};
+//   uint8_t temp_send[255]={0};
+//   uint8_t nb_command = 1;
+//   uint8_t nb_byte_send = 4;
+//   float_t temp;
+
+//   while(true)
+//   {
+//     rs.read(cmd_array,nb_command,temp_receive);
+//     temp = temperature.getTemp();
+//     putFloatInArray(temp_send,temp);
+//     rs.write(PSU_ID,cmd_array[0],nb_byte_send,temp_send);
+//   }
+// }
+
+void initLedFunction()
+{
   LedBatt4 = 0;
   ThisThread::sleep_for(delay);
   LedBatt3 = 0;
@@ -52,393 +194,17 @@ void ledfeedbackFunction()
   ThisThread::sleep_for(delay);
   LedStatusV2 = 0;
   ThisThread::sleep_for(delay);
-
-  while(true)
-  {
-    // Valeur de la batterie donnée avec un test pratique (voir Excel)
-    value = Battery_16V.read();
-
-    // Full - 16,4V
-    if(value > 0.462)                               
-    {
-      LedBatt1 = 0;
-      LedBatt2 = 0;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    // 16,4V - 15,8V 
-    else if (value <= 0.462 && value > 0.445)
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 0;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    // 15,8V - 15,4V
-    else if (value <= 0.445 && value > 0.433)
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 1;
-      LedBatt3 = 0;
-      LedBatt4 = 1;
-    }
-    // 15,4V - 0V
-    else                                           
-    {
-      LedBatt1 = 1;
-      LedBatt2 = 1;
-      LedBatt3 = 1;
-      LedBatt4 = 0;
-    }
-
-    // Double inversion
-    if(Killswitch == 0)                       
-    {
-      LedKillswitch = 1;
-    }
-    else
-    {
-      LedKillswitch = 0;
-    }
-
-    if(RunMotor1.read())
-    {
-      LedStatusV1 = 0;
-    }
-    else
-    {
-      LedStatusV1 = 1;
-    }
-
-    if(RunMotor2.read())
-    {
-      LedStatusV2 = 0;
-    }
-    else
-    {
-      LedStatusV2 = 1;
-    }
-
-    ThisThread::sleep_for(1000);
-  }
 }
 
-/**
- * @brief Fonction pour l'envoi du voltage de la batterie sur RS485
- * 
- */
-void Battery4SVoltage()
+void checkMask(INA226 sensor)
 {
-  uint8_t cmd_array[1] = {CMD_PS_VBatt};
-  uint8_t battery_receive[255]= {0};
-  uint8_t battery_send[255]= {0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t voltage_battery;
+  uint8_t dataready = 0;
 
-  while(true)
+  while(dataready == 0)
   {
-    RS485::read(cmd_array,nb_command,battery_receive);
-    if(battery_receive[0]==1)
-    {
-      voltage_battery = calcul_tension(Battery_16V.read());
-      putFloatInArray(battery_send,voltage_battery);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,battery_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du voltage du channel 12V sur RS485
- * 
- */
-void Supply12vVoltage()
-{
-  uint8_t cmd_array[1]={CMD_PS_V12};
-  uint8_t voltage12v_receive[255]={0};
-  uint8_t voltage12v_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t voltage12v;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,voltage12v_receive);
-    if(voltage12v_receive[0]==1)
-    {
-      voltage12v = sensor12v.getBusVolt();
-      putFloatInArray(voltage12v_send,voltage12v);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du courant du channel 12V sur RS485
- * 
- */
-void Supply12vCurrent()
-{
-  uint8_t cmd_array[1]={CMD_PS_C12};
-  uint8_t voltage12v_receive[255]={0};
-  uint8_t voltage12v_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t current12v;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,voltage12v_receive);
-    if(voltage12v_receive[0]==1)
-    {
-      current12v = sensor12v.getCurrent();
-      putFloatInArray(voltage12v_send,current12v);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,voltage12v_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du voltage du moteur 1 sur RS485
- * 
- */
-void Motor1Voltage()
-{
-  uint8_t cmd_array[1]={CMD_PS_V16_1};
-  uint8_t motor1_receive[255]={0};
-  uint8_t motor1_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t m1voltage;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor1_receive);
-    if(motor1_receive[0]==1)
-    {
-      m1voltage = sensorm1.getBusVolt();
-      putFloatInArray(motor1_send,m1voltage);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du courant du moteur 1 sur RS485
- * 
- */
-void Motor1Current()
-{
-  uint8_t cmd_array[1]={CMD_PS_C16_1};
-  uint8_t motor1_receive[255]={0};
-  uint8_t motor1_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t currentm1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor1_receive);
-    if(motor1_receive[0]==1)
-    {
-      currentm1 = sensorm1.getCurrent();
-      putFloatInArray(motor1_send,currentm1);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du voltage du moteur 2 sur RS485
- * 
- */
-void Motor2Voltage()
-{
-  uint8_t cmd_array[1]={CMD_PS_V16_2};
-  uint8_t motor2_receive[255]={0};
-  uint8_t motor2_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t voltagem2;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor2_receive);
-    if(motor2_receive[0]==1)
-    {
-      voltagem2 = sensorm2.getBusVolt();
-      putFloatInArray(motor2_send,voltagem2);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour l'envoi du courant du moteur 2 sur RS485
- * 
- */
-void Motor2Current()
-{
-  uint8_t cmd_array[1]={CMD_PS_C16_2};
-  uint8_t motor2_receive[255]={0};
-  uint8_t motor2_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 4;
-  float_t currentm2;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor2_receive);
-    if(motor2_receive[0]==1)
-    {
-      currentm2 = sensorm2.getCurrent();
-      putFloatInArray(motor2_send,currentm2);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour allumer le moteur 1 avec RS485
- * 
- */
-void Motor1Toggle()
-{
-  uint8_t cmd_array[1]={CMD_PS_ACT_16V_1};
-  uint8_t motor1_receive[255]={0};
-  uint8_t motor1_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor1_receive);
-    if(motor1_receive[0]==1)
-    {
-      RunMotor1 = 1;
-      motor1_send[0]=1;
-    }
-    else
-    {
-      RunMotor1 = 0;
-      motor1_send[0]=0;
-    }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
-  }
-}
-
-/**
- * @brief Fonction pour allumer le moteur 2 avec RS485
- * 
- */
-void Motor2Toggle()
-{
-  uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
-  uint8_t motor2_receive[255]={0};
-  uint8_t motor2_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor2_receive);
-    if(motor2_receive[0]==1)
-    {
-      RunMotor2 = 1;
-      motor2_send[0]=1;
-    }
-    else
-    {
-      RunMotor2 = 0;
-      motor2_send[0]=0;
-    }
-    RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
-  }
-}
-
-/**
- * @brief Fonction pour vérifier de l'état du moteur 1 avec RS485
- * 
- */
-void Motor1Read()
-{
-  uint8_t cmd_array[1]={CMD_PS_CHECK_16V_1};
-  uint8_t motor1_receive[255]={0};
-  uint8_t motor1_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor1_receive);
-    if(motor1_receive[0]==1)
-    {
-      if(StatusMotor1 == 1)
-      {
-        motor1_send[0] = 1;
-      }
-      else
-      {
-        motor1_send[0] = 0;
-      }
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor1_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour vérifier de l'état du moteur 2 avec RS485
- * 
- */
-void Motor2Read()
-{
-  uint8_t cmd_array[1]={CMD_PS_ACT_16V_2};
-  uint8_t motor2_receive[255]={0};
-  uint8_t motor2_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,motor2_receive);
-    if(motor2_receive[0]==1)
-    {
-      if(StatusMotor2 == 1)
-      {
-        motor2_send[0] = 1;
-      }
-      else
-      {
-        motor2_send[0] = 0;
-      }
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,motor2_send);
-    }
-  }
-}
-
-/**
- * @brief Fonction pour la température du power supply avec RS485
- * 
- */
-void TemperatureRead()
-{
-  uint8_t cmd_array[1]={CMD_PS_temperature};
-  uint8_t temp_receive[255]={0};
-  uint8_t temp_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 1;
-  float_t temp;
-
-  while(true)
-  {
-    RS485::read(cmd_array,nb_command,temp_receive);
-    if(temp_receive[0]==1)
-    {
-      temp = temperature.getTemp();
-      putFloatInArray(temp_send,temp);
-      RS485::write(PSU_ID,cmd_array[0],nb_byte_send,temp_send);
-    }
-  }
+    dataready = ((sensor.getMaskEnable() >> 3) & 0x01);
+    ThisThread::sleep_for(20);
+  }  
 }
 
 int main()
@@ -455,44 +221,32 @@ int main()
   RunMotor1 = 0;            
   RunMotor2 = 0;
 
-  RS485::init(PSU_ID);
+  sensor[0].setConfig(CONFIG);
+  sensor[0].setCalibration(CALIBRATION);
+  sensor[0].setCurrentLSB(CURRENTLSB);
+  sensor[1].setConfig(CONFIG);
+  sensor[1].setCalibration(CALIBRATION);
+  sensor[1].setCurrentLSB(CURRENTLSB);
+  sensor[2].setConfig(CONFIG);
+  sensor[2].setCalibration(CALIBRATION);
+  sensor[2].setCurrentLSB(CURRENTLSB);
 
-  feedbackPSU.start(ledfeedbackFunction);
-  feedbackPSU.set_priority(osPriorityAboveNormal1);
+  ThisThread::sleep_for(rand() % 100); // Petit Délai pour éviter des collisions avec RS485
 
-  threadbattery4s.start(Battery4SVoltage);
-  threadbattery4s.set_priority(osPriorityHigh);
+  initLedFunction();
 
-  thread12v.start(Supply12vVoltage);
-  thread12v.set_priority(osPriorityAboveNormal3);
+  sensorRead.start(readSensorCallback);
+  sensorRead.set_priority(osPriorityHigh);
 
-  thread12c.start(Supply12vCurrent);
-  thread12c.set_priority(osPriorityAboveNormal3);
+  activationMotor.start(enableMotorCallback);
+  activationMotor.set_priority(osPriorityHigh);
 
-  threadmotor1v.start(Motor1Voltage);
-  threadmotor1v.set_priority(osPriorityAboveNormal3);
+  readMotor.start(readMotorCallback);
+  readMotor.set_priority(osPriorityHigh);
 
-  threadmotor1c.start(Motor1Current);
-  threadmotor1c.set_priority(osPriorityAboveNormal3);
+  threademergencystop.start(emergencyStopCallBack);
+  threademergencystop.set_priority(osPriorityAboveNormal1);
 
-  threadmotor2v.start(Motor2Voltage);
-  threadmotor2v.set_priority(osPriorityAboveNormal3);
-
-  threadmotor2c.start(Motor2Current);
-  threadmotor2c.set_priority(osPriorityAboveNormal3);
-
-  threadmotor1toggle.start(Motor1Toggle);
-  threadmotor1toggle.set_priority(osPriorityHigh);
-
-  threadmotor2toggle.start(Motor2Toggle);
-  threadmotor2toggle.set_priority(osPriorityHigh);
-
-  threadmotor1read.start(Motor1Read);
-  threadmotor1read.set_priority(osPriorityHigh);
-
-  threadmotor2read.start(Motor2Read);
-  threadmotor2read.set_priority(osPriorityHigh);
-
-  threadtemperature.start(TemperatureRead);
-  threadtemperature.set_priority(osPriorityAboveNormal3);
+  // threadtemperature.start(TemperatureRead);
+  // threadtemperature.set_priority(osPriorityHigh);
 }
