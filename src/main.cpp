@@ -229,6 +229,8 @@ int main()
   sensor[2].setCalibration(CALIBRATION);
   sensor[2].setCurrentLSB(CURRENTLSB);
 
+  ThisThread::sleep_for(rand() % 100); // Petit Délai pour éviter des collisions avec RS485
+
   initLedFunction();
 
   sensorRead.start(readSensorCallback);
