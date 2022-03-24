@@ -216,7 +216,9 @@ int main()
   LedKillswitch = 1;
   LedStatusV1 = 1;
   LedStatusV2 = 1;
-  RunMotor1 = 0;            //  On s'assure que les 2 moteurs sont éteints
+
+  //  On s'assure que les 2 moteurs sont éteints
+  RunMotor1 = 0;            
   RunMotor2 = 0;
 
   sensor[0].setConfig(CONFIG);
