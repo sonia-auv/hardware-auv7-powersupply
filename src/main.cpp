@@ -7,6 +7,7 @@
  ***/
 
 #include "main.h"
+#include "Utility/utility.h"
 
 void initLedFunction();
 void checkMask(INA226 sensor);
@@ -246,6 +247,9 @@ int main()
 
   threademergencystop.start(emergencyStopCallBack);
   threademergencystop.set_priority(osPriorityAboveNormal1);
+
+  thread_isAlive.start(callback(isAliveThread, &rs));
+  thread_isAlive.set_priority(osPriorityHigh);
 
   // threadtemperature.start(TemperatureRead);
   // threadtemperature.set_priority(osPriorityHigh);

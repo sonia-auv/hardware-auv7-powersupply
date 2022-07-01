@@ -75,6 +75,7 @@ Thread sensorRead;
 Thread activationMotor;
 Thread readMotor;
 Thread threademergencystop;
+Thread thread_isAlive;
 
 //###################################################
 //             GLOBAL VARIABLE DEFINITIONS
