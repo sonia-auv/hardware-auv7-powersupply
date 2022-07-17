@@ -2,3 +2,4 @@
 .vscode
 doxygen/html
 doxygen/latex
+.cache
