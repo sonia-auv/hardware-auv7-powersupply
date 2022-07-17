@@ -17,6 +17,23 @@
 #define nb_alimentation 4
 #define nb_samples 10
 
+#define NB_MOTORS 2
+
+#if defined(USE_KILL_SIGNAL_HIGH)
+    #define KILL_ACTIVATION_STATUS (1)
+#elif defined(KILL_SWITCH_ACTIVE_LOW)
+    #define USE_KILL_SIGNAL_LOW (0)
+#else
+    #error "Error: kill activation state not defined, plese define USE_KILL_SIGNAL_HIGH or USE_KILL_SIGNAL_LOW before including power_management.h"
+#endif
+
+typedef enum{
+    MOTOR_ON,
+    MOTOR_OFF,
+    MOTOR_FAILURE,
+    MOTOR_ERROR
+} motor_state_t;
+
 // Power Supply Slave à définir ici (0 à 3)
 #define PSU_ID SLAVE_PSU0
 
@@ -42,17 +59,13 @@ DigitalOut LedBatt2(LED_BATT2);
 DigitalOut LedBatt3(LED_BATT3);
 DigitalOut LedBatt4(LED_BATT4);
 DigitalOut LedKillswitch(LED_KILLSWITCH);
-DigitalOut LedStatusV1(PGOOD_MOTOR_V1);
-DigitalOut LedStatusV2(PGOOD_MOTOR_V2);
-
 DigitalOut Run12v(RUN_12V);
-DigitalOut RunMotor1(RUNMOTOR_V1);
-DigitalOut RunMotor2(RUNMOTOR_V2);
 
-DigitalIn StatusMotor1(STATUSMOTOR_V1);
-DigitalIn StatusMotor2(STATUSMOTOR_V2);
-DigitalIn Killswitch(KILLSWITCH);
+DigitalOut LedMotor[NB_MOTORS] = {DigitalOut(PGOOD_MOTOR_V1), DigitalOut(PGOOD_MOTOR_V2)};
+DigitalOut enable_motor[NB_MOTORS] = {DigitalOut(RUNMOTOR_V1), DigitalOut(RUNMOTOR_V2)};
+DigitalIn status_motor[NB_MOTORS] = {DigitalIn(STATUSMOTOR_V1), DigitalIn(STATUSMOTOR_V2)}; // 0 = fault, 1 = normal 
 
+DigitalIn kill_input(KILLSWITCH);
 AnalogIn Battery_16V(INPUT_4S);
 
 //###################################################
@@ -61,9 +74,6 @@ AnalogIn Battery_16V(INPUT_4S);
 
 RS485 rs(PSU_ID);
 I2C i2c_bus(I2CSDA,I2CSCL);
-// INA226 sensorm1(&i2c_bus, adress16V1);
-// INA226 sensorm2(&i2c_bus, adress16V2);
-// INA226 sensor12v(&i2c_bus, adress12v);
 INA226 sensor[3] = {INA226(&i2c_bus, adress16V1), INA226(&i2c_bus, adress16V2), INA226(&i2c_bus, adress12v)};
 TC74A5 temperature(&i2c_bus, adressTemp);
 
@@ -72,14 +82,39 @@ TC74A5 temperature(&i2c_bus, adressTemp);
 //###################################################
 
 Thread sensorRead;
-Thread activationMotor;
-Thread readMotor;
-Thread threademergencystop;
+Thread motorEnableRqst;
+Thread readMotorStatus;
+Thread motorController;
 Thread thread_isAlive;
 
 //###################################################
 //             GLOBAL VARIABLE DEFINITIONS
 //###################################################
+
+typedef struct {
+    uint8_t request[NB_MOTORS];
+    Mutex mutex;
+}enable_motor_request_t;
+
+enable_motor_request_t enable_motor_request;
+
+typedef struct {
+    uint8_t state[NB_MOTORS];
+    Mutex mutex;
+}motor_failure_state_t;
+
+motor_failure_state_t motor_failure_state;
+
+typedef struct {
+    motor_state_t state[NB_MOTORS];
+    Mutex mutex;
+}current_state_motors_t;
+current_state_motors_t motor_state;
+
+// Mutex mutexPWM;
+// Mutex mutexStatusMotor;
+// Mutex mutexEnableMotorRequest;
+// Mutex mutexMotorState;
 
 uint8_t enableMotor1;
 uint8_t enableMotor2;

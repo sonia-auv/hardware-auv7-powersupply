@@ -6,15 +6,22 @@
  * 
  ***/
 
+#define USE_KILL_SIGNAL_HIGH
 #include "main.h"
-#include "Utility/utility.h"
 
 void initLedFunction();
 void checkMask(INA226 sensor);
 void ledFeedbackFunction(double_t batt_voltage);
+bool isKillSwitchActivated();
 
 void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
+  motor_state_t motor_state_cpy[NB_MOTORS];
+
+  motor_state.mutex.lock();
+  for(int i=0; i<NB_MOTORS; i++) {motor_state_cpy[i] = motor_state.state[i];}
+  motor_state.mutex.unlock();
+
   if(batt_voltage > 0.462)                               // Full - 16,4V
   {
     LedBatt1 = 0;
@@ -43,30 +50,25 @@ void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est in
     LedBatt3 = 1;
     LedBatt4 = 0;
   }
-  if(Killswitch == 0)                       // Double inversion
+
+  LedKillswitch = (isKillSwitchActivated())? 0: 1;// Double inversion
+
+  for(uint8_t i = 0; i < NB_MOTORS; ++i)
   {
-    LedKillswitch = 1;
+    if(motor_state_cpy[i] == MOTOR_ON)
+    {
+      LedMotor[i] = 0x01;
+    }
+    else
+    {
+      LedMotor[i] = 0x00;
+    }
   }
-  else
-  {
-    LedKillswitch = 0;
-  }
-  if(RunMotor1.read())
-  {
-    LedStatusV1 = 0;
-  }
-  else
-  {
-    LedStatusV1 = 1;
-  }
-  if(RunMotor2.read())
-  {
-    LedStatusV2 = 0;
-  }
-  else
-  {
-    LedStatusV2 = 1;
-  }
+}
+
+bool isKillSwitchActivated()
+{
+  return kill_input == KILL_ACTIVATION_STATUS;
 }
 
 void readSensorCallback()
@@ -106,59 +108,107 @@ void readSensorCallback()
   }  
 }
 
-void enableMotorCallback()
+void receiveMotorEnableRequestCallback()
 {
-  uint8_t cmd_array[1]={CMD_ACT_MOTOR};
-  uint8_t motor_receive[255]={0};
-  uint8_t motor_send[255]={0};
-  uint8_t nb_command = 1;
-  uint8_t nb_byte_send = 2;
+  uint8_t cmd_array[1] = {CMD_ACT_MOTOR};
+  uint8_t receive[255];
+  uint8_t nb_cmd = 1;
+  uint8_t size_cmd = NB_MOTORS;
 
   while(true)
   {
-    if(rs.read(cmd_array, nb_command, motor_receive) == 2)
+    if(rs.read(cmd_array, nb_cmd, receive) == size_cmd)
     {
-      enableMotor1 = motor_receive[0];
-      enableMotor2 = motor_receive[1];
+      enable_motor_request.mutex.lock();
+      for(uint8_t i = 0; i < NB_MOTORS; ++i)
+      {
+          enable_motor_request.request[i] = receive[i] & 0x01;
+      }
+      enable_motor_request.mutex.unlock();
+    }
+  }
+}
+
+void readMotorStatusCallback()
+{
+  uint8_t cmd_array[1] = {CMD_READ_MOTOR};
+  uint8_t send[255] = {0};
+  uint8_t nb_bytes = NB_MOTORS;
+  uint8_t motor_failure_state_cpy[NB_MOTORS] = {0};
+  uint8_t enable_motor_resquest_cpy[NB_MOTORS] = {0};
+
+  while(true)
+  {
+    // get the motor request from the user for all motor
+    enable_motor_request.mutex.lock();
+    for(uint8_t i = 0; i < NB_MOTORS; i++) { enable_motor_resquest_cpy[i] = enable_motor_request.request[i];}
+    enable_motor_request.mutex.unlock();
+
+    //get motor faillure state and set message
+    motor_failure_state.mutex.lock();
+    for(uint8_t i = 0; i < NB_MOTORS; ++i)
+    {
+      motor_failure_state.state[i] = ~(status_motor[i]) & 0x01;
+      motor_failure_state_cpy[i] = motor_failure_state.state[i]; 
+    }
+    motor_failure_state.mutex.unlock();
+
+    //Set the send message
+    for(uint8_t i = 0; i < NB_MOTORS; ++i)
+    {
+      if(motor_failure_state_cpy[i] == 1) send[i] = 0x02;
+      else send[i] = enable_motor_resquest_cpy[i];
+    }
+
+    rs.write(PSU_ID, cmd_array[0], nb_bytes, send);
+    ThisThread::sleep_for(1000);
+  }
+}
+
+void motorControllerCallback()
+{
+    uint8_t failure_status_motor[NB_MOTORS] = {0};
+    uint8_t enable_motor_request_copy[NB_MOTORS]= {0};
+    motor_state_t motor_state_copy[NB_MOTORS];
+
+    while(true)
+    {
+      //get failure status of all motor
+      motor_failure_state.mutex.lock();
+      for(uint8_t i = 0; i < NB_MOTORS; i++){ failure_status_motor[i] = motor_failure_state.state[i];}
+      motor_failure_state.mutex.unlock();
+
+      //get user request of all motor
+      enable_motor_request.mutex.lock();
+      for(uint8_t i = 0; i < NB_MOTORS; i++){ enable_motor_request_copy[i] = enable_motor_request.request[i];}
+      enable_motor_request.mutex.unlock();
+        
+      //set enable status depending on the state of the kill stwitch and on the motor error code
+      for(uint8_t i = 0; i < NB_MOTORS; ++i)
+      {
+        if(isKillSwitchActivated())
+        {
+          enable_motor[i] = 0;
+          motor_state_copy[i] = (enable_motor_request_copy[i]) ? MOTOR_ON : MOTOR_OFF;
+        }
+        else if(failure_status_motor[i] == 1)
+        {
+          motor_state_copy[i] = MOTOR_FAILURE;
+          enable_motor[i] = 0;//(enable_motor_request_copy[i]) ? MOTOR_ON : MOTOR_OFF; (to test)
+        }
+        else
+        {
+          enable_motor[i] = enable_motor_request_copy[i];
+          motor_state_copy[i] = (enable_motor_request_copy[i]) ? MOTOR_ON : MOTOR_OFF;
+        }
+      }
+
+      motor_state.mutex.lock();
+      for(int i=0; i<NB_MOTORS; i++) { motor_state.state[i] = motor_state_copy[i];}
+      motor_state.mutex.unlock();
+
       ThisThread::sleep_for(500);
-      motor_send[0] = RunMotor1;
-      motor_send[1] = RunMotor2;
     }
-    rs.write(PSU_ID, cmd_array[0], nb_byte_send, motor_send);
-  }
-}
-
-void readMotorCallback()
-{
-  uint8_t cmd_array[1]={CMD_READ_MOTOR};
-  uint8_t motor_send[255]={0};
-  uint8_t nb_byte_send = 2;
-
-  while(true)
-  {
-    motor_send[0] = RunMotor1;
-    motor_send[1] = RunMotor2;
-    rs.write(PSU_ID, cmd_array[0], nb_byte_send, motor_send);
-    ThisThread::sleep_for(2500);
-  }  
-}
-
-void emergencyStopCallBack()
-{
-  while(true)
-  {
-    if(Killswitch == 1)
-    {
-      RunMotor1 = 0;
-      RunMotor2 = 0;
-    }
-    else if (Killswitch == 0)
-    {
-      RunMotor1 = enableMotor1;
-      RunMotor2 = enableMotor2;
-    }
-    ThisThread::sleep_for(200);
-  }
 }
 
 // void TemperatureRead()
@@ -191,9 +241,9 @@ void initLedFunction()
   ThisThread::sleep_for(delay);
   LedKillswitch = 0;
   ThisThread::sleep_for(delay);
-  LedStatusV1 = 0;
+  LedMotor[0] = 0;
   ThisThread::sleep_for(delay);
-  LedStatusV2 = 0;
+  LedMotor[1] = 0;
   ThisThread::sleep_for(delay);
 }
 
@@ -205,7 +255,7 @@ void checkMask(INA226 sensor)
   {
     dataready = ((sensor.getMaskEnable() >> 3) & 0x01);
     ThisThread::sleep_for(20);
-  }  
+  }
 }
 
 int main()
@@ -215,12 +265,14 @@ int main()
   LedBatt3 = 1;
   LedBatt4 = 1;
   LedKillswitch = 1;
-  LedStatusV1 = 1;
-  LedStatusV2 = 1;
+  LedMotor[0] = 1;
+  LedMotor[1] = 1;
 
   //  On s'assure que les 2 moteurs sont éteints
-  RunMotor1 = 0;            
-  RunMotor2 = 0;
+  for(uint8_t i = 0; i < NB_MOTORS; ++i)
+  {
+    enable_motor[i] = 0;
+  }
 
   sensor[0].setConfig(CONFIG);
   sensor[0].setCalibration(CALIBRATION);
@@ -237,19 +289,19 @@ int main()
   initLedFunction();
 
   sensorRead.start(readSensorCallback);
-  sensorRead.set_priority(osPriorityHigh);
+  sensorRead.set_priority(osPriorityHigh2);
 
-  activationMotor.start(enableMotorCallback);
-  activationMotor.set_priority(osPriorityHigh);
+  readMotorStatus.start(readMotorStatusCallback);
+  readMotorStatus.set_priority(osPriorityHigh);
 
-  readMotor.start(readMotorCallback);
-  readMotor.set_priority(osPriorityHigh);
+  motorController.start(motorControllerCallback);
+  motorController.set_priority(osPriorityHigh1);
 
-  threademergencystop.start(emergencyStopCallBack);
-  threademergencystop.set_priority(osPriorityAboveNormal1);
+  motorEnableRqst.start(receiveMotorEnableRequestCallback);
+  motorEnableRqst.set_priority(osPriorityHigh);
 
   thread_isAlive.start(callback(isAliveThread, &rs));
-  thread_isAlive.set_priority(osPriorityHigh);
+  thread_isAlive.set_priority(osPriorityNormal1);
 
   // threadtemperature.start(TemperatureRead);
   // threadtemperature.set_priority(osPriorityHigh);
