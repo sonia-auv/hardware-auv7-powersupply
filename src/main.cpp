@@ -57,11 +57,11 @@ void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est in
   {
     if(motor_state_cpy[i] == MOTOR_ON)
     {
-      LedMotor[i] = 0x01;
+      LedMotor[i] = 0x00;
     }
     else
     {
-      LedMotor[i] = 0x00;
+      LedMotor[i] = 0x01;
     }
   }
 }
