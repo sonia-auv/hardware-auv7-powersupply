@@ -8,3 +8,4 @@ doxygen/latex
 *.py*
 mbed-os
 BUILD
+INA226

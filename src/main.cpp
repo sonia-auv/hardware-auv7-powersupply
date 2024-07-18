@@ -7,23 +7,12 @@
  ***/
 
 #define USE_KILL_SIGNAL_HIGH
-
-//#define KILL_SWITCH_ACTIVE_LOW
-
-#include "../include/main.h"
+#include "main.h"
 
 void initLedFunction();
-void checkMask(INA228 sensor);
+void checkMask(INA226 sensor);
 void ledFeedbackFunction(double_t batt_voltage);
 bool isKillSwitchActivated();
-
-#define CONFIG_SET (0x01 << 4)
-#define CONFIG_ADC_SET (0xFB6B)
-#define SHUNT_CALIBRATION (0xBE0)
-#define CURRENT_LSB_CALIBRATION (0.000029)
-#define OVERVOLTAGE_BUS_THRESHOLD (0x1A40)
-#define UNDERVOLTAGE_BUS_THRESHOLD (0xD80)
-#define OVERTEMPERATURE_THRESHOLD (0x2800)
 
 void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est inversée 0 pour allumer et 1 pour éteindre
 {
@@ -33,36 +22,34 @@ void ledFeedbackFunction(double_t batt_voltage)      //  Logique des LEDs est in
   for(int i=0; i<NB_MOTORS; i++) {motor_state_cpy[i] = motor_state.state[i];}
   motor_state.mutex.unlock();
 
-
-    if(batt_voltage > 0.462)                               // Full - 16,4V
-    {
-        LedBatt1 = 0;
-        LedBatt2 = 0;
-        LedBatt3 = 0;
-        LedBatt4 = 1;
-    }
-    else if (batt_voltage <= 0.462 && batt_voltage > 0.445)       // 16,4V - 15,8V 
-    {
-        LedBatt1 = 1;
-        LedBatt2 = 0;
-        LedBatt3 = 0;
-        LedBatt4 = 1;
-    }
-    else if (batt_voltage <= 0.445 && batt_voltage > 0.433)      // 15,8V - 15,4V
-    {
-        LedBatt1 = 1;
-        LedBatt2 = 1;
-        LedBatt3 = 0;
-        LedBatt4 = 1;
-    }
-    else                                           // 15,4V - 0V
-    {
-        LedBatt1 = 1;
-        LedBatt2 = 1;
-        LedBatt3 = 1;
-        LedBatt4 = 0;
-    }
-
+  if(batt_voltage > 0.462)                               // Full - 16,4V
+  {
+    LedBatt1 = 0;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.462 && batt_voltage > 0.445)       // 16,4V - 15,8V 
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 0;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else if (batt_voltage <= 0.445 && batt_voltage > 0.433)      // 15,8V - 15,4V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 0;
+    LedBatt4 = 1;
+  }
+  else                                           // 15,4V - 0V
+  {
+    LedBatt1 = 1;
+    LedBatt2 = 1;
+    LedBatt3 = 1;
+    LedBatt4 = 0;
+  }
 
   LedKillswitch = (isKillSwitchActivated())? 0: 1;// Double inversion
 
@@ -91,24 +78,15 @@ void readSensorCallback()
   uint8_t current_send[255]={0};
   uint8_t nb_bytes_voltage = nb_alimentation*4;
   uint8_t nb_bytes_current = nb_sensor*4;
-  uint8_t test = 0;
   double_t voltage, current, batt;
 
   while(true)
   {
-    /*if(test == 0){
-        LedBatt4 = 1;
-        test = 1;
-    }else{
-        test = 0;
-        LedBatt4 = 0;
-    }*/
     for(uint8_t i = 0; i < nb_sensor; ++i)
     {
       checkMask(sensor[i]);
       voltage = sensor[i].getBusVolt();
       current = sensor[i].getCurrent();
-
 
       putFloatInArray(voltage_send, voltage, i*4);
       putFloatInArray(current_send, current, i*4);
@@ -126,7 +104,7 @@ void readSensorCallback()
     ledFeedbackFunction(batt);
     rs.write(PSU_ID, cmd_array[0], nb_bytes_voltage, voltage_send);
     rs.write(PSU_ID, cmd_array[1], nb_bytes_current, current_send);
-    ThisThread::sleep_for(550);
+    ThisThread::sleep_for(500);
   }  
 }
 
@@ -223,14 +201,13 @@ void motorControllerCallback()
           enable_motor[i] = enable_motor_request_copy[i];
           motor_state_copy[i] = (enable_motor_request_copy[i]) ? MOTOR_ON : MOTOR_OFF;
         }
-
       }
 
       motor_state.mutex.lock();
       for(int i=0; i<NB_MOTORS; i++) { motor_state.state[i] = motor_state_copy[i];}
       motor_state.mutex.unlock();
 
-      ThisThread::sleep_for(400);
+      ThisThread::sleep_for(500);
     }
 }
 
@@ -270,14 +247,14 @@ void initLedFunction()
   ThisThread::sleep_for(delay);
 }
 
-void checkMask(INA228 sensor)
+void checkMask(INA226 sensor)
 {
-  uint8_t data_ready = 0;
+  uint8_t dataready = 0;
 
-  while(data_ready == 0)
+  while(dataready == 0)
   {
-    data_ready = ((sensor.getAlertFlags()>>1) & 0x01);
-    ThisThread::sleep_for(1);
+    dataready = ((sensor.getMaskEnable() >> 3) & 0x01);
+    ThisThread::sleep_for(20);
   }
 }
 
@@ -297,21 +274,15 @@ int main()
     enable_motor[i] = 0;
   }
 
-
-    uint8_t i = 0;
-
-    // if the config isn't found (if the board is tested alone for example), this is gonna become an infinite loop
-    while(i < nb_sensor)
-    {
-        sensor[i].setConfig(CONFIG_SET);
-        sensor[i].setConfigADC(CONFIG_ADC_SET);
-        sensor[i].setShuntCal(SHUNT_CALIBRATION);
-        sensor[i].setCurrentLSB(CURRENT_LSB_CALIBRATION);
-
-        if(sensor[i].getConfig() == CONFIG_SET && sensor[i].getConfigADC() == CONFIG_ADC_SET && sensor[i].getShuntCal() == SHUNT_CALIBRATION){
-            i++;
-        }
-    }
+  sensor[0].setConfig(CONFIG);
+  sensor[0].setCalibration(CALIBRATION);
+  sensor[0].setCurrentLSB(CURRENTLSB);
+  sensor[1].setConfig(CONFIG);
+  sensor[1].setCalibration(CALIBRATION);
+  sensor[1].setCurrentLSB(CURRENTLSB);
+  sensor[2].setConfig(CONFIG);
+  sensor[2].setCalibration(CALIBRATION);
+  sensor[2].setCurrentLSB(CURRENTLSB);
 
   ThisThread::sleep_for(rand() % 100); // Petit Délai pour éviter des collisions avec RS485
 

@@ -8,7 +8,7 @@
 //#include "../INA226/INA226.h"
 #include "../hardware-utility/TC74A5/TC74A5.h"
 #include "../hardware-utility/RS485/RS485.h"
-#include "../hardware-utility/INA228/INA228.h"
+#include "../INA226/INA226.h"
 
 #include "../hardware-utility/RS485/RS485_definition.h"
 
@@ -76,7 +76,7 @@ AnalogIn Battery_16V(INPUT_4S);
 
 RS485 rs(PSU_ID);
 I2C i2c_bus(I2CSDA,I2CSCL);
-INA228 sensor[3] = {INA228(&i2c_bus, adress16V1), INA228(&i2c_bus, adress16V2), INA228(&i2c_bus, adress12v)};
+INA226 sensor[3] = {INA226(&i2c_bus, adress16V1), INA226(&i2c_bus, adress16V2), INA226(&i2c_bus, adress12v)};
 TC74A5 temperature(&i2c_bus, adressTemp);
 
 //###################################################
