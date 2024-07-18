@@ -3,3 +3,10 @@
 doxygen/html
 doxygen/latex
 .cache
+.build
+.mbed
+projectfiles
+*.py*
+mbed-os
+BUILD
+hardware-utility

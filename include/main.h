@@ -4,11 +4,13 @@
 #include "mbed.h"
 #include "rtos.h"
 #include "pinDef.h"
-#include "Utility/Utility.h"
-#include "INA226.h"
-#include "TC74A5/TC74A5.h"
-#include "RS485/RS485.h"
-#include "RS485/RS485_definition.h"
+#include "../hardware-utility/Utility/utility.h"
+//#include "../INA226/INA226.h"
+#include "../hardware-utility/TC74A5/TC74A5.h"
+#include "../hardware-utility/RS485/RS485.h"
+#include "../hardware-utility/INA228/INA228.h"
+
+#include "../hardware-utility/RS485/RS485_definition.h"
 
 #define delay 300
 #define battery_delay 20
@@ -22,7 +24,7 @@
 #if defined(USE_KILL_SIGNAL_HIGH)
     #define KILL_ACTIVATION_STATUS (1)
 #elif defined(KILL_SWITCH_ACTIVE_LOW)
-    #define USE_KILL_SIGNAL_LOW (0)
+    #define KILL_ACTIVATION_STATUS (0)
 #else
     #error "Error: kill activation state not defined, plese define USE_KILL_SIGNAL_HIGH or USE_KILL_SIGNAL_LOW before including power_management.h"
 #endif
@@ -35,7 +37,7 @@ typedef enum{
 } motor_state_t;
 
 // Power Supply Slave à définir ici (0 à 3)
-#define PSU_ID SLAVE_PSU0
+#define PSU_ID SLAVE_PSU1
 
 //###################################################
 //              I2C SLAVE DEFINITION
@@ -74,7 +76,7 @@ AnalogIn Battery_16V(INPUT_4S);
 
 RS485 rs(PSU_ID);
 I2C i2c_bus(I2CSDA,I2CSCL);
-INA226 sensor[3] = {INA226(&i2c_bus, adress16V1), INA226(&i2c_bus, adress16V2), INA226(&i2c_bus, adress12v)};
+INA228 sensor[3] = {INA228(&i2c_bus, adress16V1), INA228(&i2c_bus, adress16V2), INA228(&i2c_bus, adress12v)};
 TC74A5 temperature(&i2c_bus, adressTemp);
 
 //###################################################
