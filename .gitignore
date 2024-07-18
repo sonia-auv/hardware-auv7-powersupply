@@ -4,8 +4,7 @@ doxygen/html
 doxygen/latex
 .cache
 .build
-.mbed
-projectfiles
+\projectfiles
 *.py*
 mbed-os
 BUILD
